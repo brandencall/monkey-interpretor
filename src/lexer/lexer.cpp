@@ -1,6 +1,5 @@
 #include "lexer.h"
 #include "token.h"
-#include <iostream>
 #include <string>
 
 namespace lexer {
@@ -49,9 +48,15 @@ token::Token Lexer::nextToken() {
     case '}':
         token = newToken(token::TokenType::RBRACE, ch_);
         break;
-    default:
+    case 0:
         token.literal = "";
         token.type = token::TokenType::END_OF_FILE;
+    default:
+        if (isLetter(ch_)) {
+            token.literal = readIdentifier();
+        } else {
+            token = newToken(token::TokenType::ILLEGAL, ch_);
+        }
     }
     readChar();
     return token;
@@ -62,6 +67,14 @@ token::Token Lexer::newToken(token::TokenType tokenType, char character) {
     token.type = tokenType;
     token.literal = character;
     return token;
+}
+//TODO: implement
+std::string Lexer::readIdentifier() {
+    return "";
+}
+
+bool Lexer::isLetter(char character) {
+    return ('a' <= character && character  <= 'z') || ('A' <= character  && character  <= 'Z') || character  == '_';
 }
 
 } // namespace lexer
