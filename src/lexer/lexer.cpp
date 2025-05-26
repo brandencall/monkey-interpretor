@@ -1,7 +1,7 @@
 #include "lexer.h"
 #include "token.h"
-#include <iostream>
 #include <string>
+#include <iostream>
 
 namespace lexer {
 
@@ -28,7 +28,17 @@ token::Token Lexer::nextToken() {
 
     switch (ch_) {
     case '=':
-        token = newToken(token::TokenType::ASSIGN, ch_);
+        if (peekChar() == '=') {
+            char peekedCh = ch_;
+            readChar();
+            std::string combinedChars;
+            combinedChars += peekedCh;
+            combinedChars += ch_;
+            token.literal = combinedChars; 
+            token.type = token::TokenType::EQ;
+        } else {
+            token = newToken(token::TokenType::ASSIGN, ch_);
+        }
         break;
     case ';':
         token = newToken(token::TokenType::SEMICOLON, ch_);
@@ -44,6 +54,34 @@ token::Token Lexer::nextToken() {
         break;
     case '+':
         token = newToken(token::TokenType::PLUS, ch_);
+        break;
+    case '-':
+        token = newToken(token::TokenType::MINUS, ch_);
+        break;
+    case '!':
+        if (peekChar() == '=') {
+            char peekedCh = ch_;
+            readChar();
+            std::string combinedChars;
+            combinedChars += peekedCh;
+            combinedChars += ch_;
+            token.literal = combinedChars; 
+            token.type = token::TokenType::NOT_EQ;
+        } else {
+            token = newToken(token::TokenType::BANG, ch_);
+        }
+        break;
+    case '/':
+        token = newToken(token::TokenType::SLASH, ch_);
+        break;
+    case '*':
+        token = newToken(token::TokenType::ASTERISK, ch_);
+        break;
+    case '<':
+        token = newToken(token::TokenType::LT, ch_);
+        break;
+    case '>':
+        token = newToken(token::TokenType::GT, ch_);
         break;
     case '{':
         token = newToken(token::TokenType::LBRACE, ch_);
@@ -109,6 +147,14 @@ bool Lexer::isDigit(char character) {
 void Lexer::skipWhitespace() {
     while (ch_ == ' ' || ch_ == '\t' || ch_ == '\n' || ch_ == '\r') {
         readChar();
+    }
+}
+
+char Lexer::peekChar() {
+    if (readPosition_ >= input_.length()) {
+        return 0;
+    } else {
+        return input_[readPosition_];
     }
 }
 

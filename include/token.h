@@ -8,16 +8,34 @@ enum class TokenType {
     END_OF_FILE,
     IDENT,
     INT,
+
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+
+    LT,
+    GT,
+    EQ,
+    NOT_EQ,
+
     COMMA,
     SEMICOLON,
+
     LPAREN,
     RPAREN,
     LBRACE,
     RBRACE,
+
     FUNCTION,
-    LET
+    LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 };
 
 struct Token {

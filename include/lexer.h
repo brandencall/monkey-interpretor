@@ -23,5 +23,6 @@ class Lexer {
     bool isLetter(char character);
     bool isDigit(char character);
     void skipWhitespace();
+    char peekChar();
 };
 } // namespace lexer

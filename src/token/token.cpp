@@ -6,7 +6,12 @@ namespace token {
 
 std::map<std::string, TokenType> keywords {
     {"fn", token::TokenType::FUNCTION}, 
-    {"let", token::TokenType::LET} 
+    {"let", token::TokenType::LET}, 
+    {"true", token::TokenType::TRUE},
+    {"false", token::TokenType::FALSE}, 
+    {"if", token::TokenType::IF}, 
+    {"else", token::TokenType::ELSE}, 
+    {"return", token::TokenType::RETURN}, 
 };
 
 std::string tokenTypeToString(TokenType type) {
@@ -23,6 +28,22 @@ std::string tokenTypeToString(TokenType type) {
         return "=";
     case token::TokenType::PLUS:
         return "+";
+    case token::TokenType::MINUS:
+        return "-";
+    case token::TokenType::BANG:
+        return "!";
+    case token::TokenType::ASTERISK:
+        return "*";
+    case token::TokenType::SLASH:
+        return "/";
+    case token::TokenType::LT:
+        return "<";
+    case token::TokenType::GT:
+        return ">";
+    case token::TokenType::EQ:
+        return "==";
+    case token::TokenType::NOT_EQ:
+        return "!=";
     case token::TokenType::COMMA:
         return ",";
     case token::TokenType::SEMICOLON:
@@ -39,6 +60,16 @@ std::string tokenTypeToString(TokenType type) {
         return "FUNCTION";
     case token::TokenType::LET:
         return "LET";
+    case token::TokenType::TRUE:
+        return "TRUE";
+    case token::TokenType::FALSE:
+        return "FALSE";
+    case token::TokenType::IF:
+        return "IF";
+    case token::TokenType::ELSE:
+        return "ELSE";
+    case token::TokenType::RETURN:
+        return "RETURN";
     default:
         return "UNKNOWN";
     }
