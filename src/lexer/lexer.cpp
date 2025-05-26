@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "token.h"
+#include <iostream>
 #include <string>
 
 namespace lexer {
@@ -22,6 +23,8 @@ void Lexer::readChar() {
 
 token::Token Lexer::nextToken() {
     token::Token token;
+
+    skipWhitespace();
 
     switch (ch_) {
     case '=':
@@ -51,9 +54,16 @@ token::Token Lexer::nextToken() {
     case 0:
         token.literal = "";
         token.type = token::TokenType::END_OF_FILE;
+        break;
     default:
         if (isLetter(ch_)) {
             token.literal = readIdentifier();
+            token.type = token::lookUpIdentifier(token.literal);
+            return token;
+        } else if (isDigit(ch_)) {
+            token.type = token::TokenType::INT;
+            token.literal = readNumber();
+            return token;
         } else {
             token = newToken(token::TokenType::ILLEGAL, ch_);
         }
@@ -68,13 +78,38 @@ token::Token Lexer::newToken(token::TokenType tokenType, char character) {
     token.literal = character;
     return token;
 }
-//TODO: implement
+
 std::string Lexer::readIdentifier() {
-    return "";
+    int pos = position_;
+    while (isLetter(ch_)) {
+        readChar();
+    }
+    int len = position_ - pos;
+    return input_.substr(pos, len);
+}
+
+std::string Lexer::readNumber() {
+    int pos = position_;
+    while (isDigit(ch_)) {
+        readChar();
+    }
+    int len = position_ - pos;
+    return input_.substr(pos, len);
 }
 
 bool Lexer::isLetter(char character) {
-    return ('a' <= character && character  <= 'z') || ('A' <= character  && character  <= 'Z') || character  == '_';
+    return ('a' <= character && character <= 'z') ||
+           ('A' <= character && character <= 'Z') || character == '_';
+}
+
+bool Lexer::isDigit(char character) {
+    return '0' <= character && character <= '9';
+}
+
+void Lexer::skipWhitespace() {
+    while (ch_ == ' ' || ch_ == '\t' || ch_ == '\n' || ch_ == '\r') {
+        readChar();
+    }
 }
 
 } // namespace lexer

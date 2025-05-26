@@ -27,4 +27,6 @@ struct Token {
 
 std::string tokenTypeToString(TokenType type);
 
+TokenType lookUpIdentifier(std::string identifier);
+
 } // namespace token

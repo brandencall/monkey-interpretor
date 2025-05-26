@@ -1,6 +1,13 @@
 #include "token.h"
+#include <map>
 
 namespace token {
+
+
+std::map<std::string, TokenType> keywords {
+    {"fn", token::TokenType::FUNCTION}, 
+    {"let", token::TokenType::LET} 
+};
 
 std::string tokenTypeToString(TokenType type) {
     switch (type) {
@@ -36,4 +43,12 @@ std::string tokenTypeToString(TokenType type) {
         return "UNKNOWN";
     }
 }
+
+TokenType lookUpIdentifier(std::string identifier){
+    if (keywords.count(identifier)){
+        return keywords[identifier];
+    }
+    return token::TokenType::IDENT;
+}
+
 } // namespace token

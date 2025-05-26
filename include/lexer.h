@@ -19,6 +19,9 @@ class Lexer {
     void readChar();
     token::Token newToken(token::TokenType tokenType, char character);
     std::string readIdentifier();
+    std::string readNumber();
     bool isLetter(char character);
+    bool isDigit(char character);
+    void skipWhitespace();
 };
 } // namespace lexer

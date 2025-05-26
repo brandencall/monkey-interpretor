@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(LexerTest, NextToken) {
-    std::string input = R"(
-    let five = 5;
+    std::string input = R"(let five = 5;
     let ten = 10;
     let add = fn(x, y) {
         x + y;
@@ -56,8 +55,10 @@ TEST(LexerTest, NextToken) {
     for (size_t i = 0; i < expected.size(); ++i) {
         token::Token tok = lexer.nextToken();
         EXPECT_EQ(tok.type, expected[i].first)
-            << "Test[" << i << "] - tokentype wrong";
+            << "Test[" << i << "] - tokentype wrong. " << '\n' 
+            << "token type given: " << token::tokenTypeToString(tok.type) << '\n'
+            << "token type expected: " << token::tokenTypeToString(expected[i].first);
         EXPECT_EQ(tok.literal, expected[i].second)
-            << "Test[" << i << "] - literal wrong";
+            << "Test[" << i << "] - literal wrong."; 
     }
 }
