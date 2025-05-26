@@ -1,7 +1,6 @@
 #include "lexer.h"
 #include "token.h"
 #include <string>
-#include <iostream>
 
 namespace lexer {
 
