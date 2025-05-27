@@ -6,6 +6,6 @@ namespace ast {
 
 void Identifier::expressionNode() const {}
 
-std::string Identifier::tokenLiteral() const { return token_.literal; }
+std::string Identifier::tokenLiteral() const { return token.literal; }
 
 } // namespace ast

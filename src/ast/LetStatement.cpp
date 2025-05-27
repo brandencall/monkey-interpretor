@@ -6,6 +6,6 @@ namespace ast {
 
 void LetStatement::statementNode() const {}
 
-std::string LetStatement::tokenLiteral() const { return token_.literal; }
+std::string LetStatement::tokenLiteral() const { return token.literal; }
 
 } // namespace ast

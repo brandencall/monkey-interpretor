@@ -9,8 +9,6 @@ class Program : public Node {
     Program() = default;
     ~Program();
     std::string tokenLiteral() const override;
-
-  private:
     std::vector<Statement *> statements;
 };
 } // namespace ast

@@ -10,9 +10,7 @@ class Identifier : public Expression {
   public:
     std::string tokenLiteral() const override;
     void expressionNode() const override;
-
-  private:
-    token::Token token_;
-    std::string value_;
+    token::Token token;
+    std::string value;
 };
 } // namespace ast

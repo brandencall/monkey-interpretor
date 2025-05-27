@@ -4,16 +4,17 @@
 #include "lexer.h"
 #include "token.h"
 #include <cstddef>
+#include <memory>
 #include <string>
 
 namespace parser {
 class Parser {
   public:
-    Parser(lexer::Lexer *lexer);
-    ast::Program parseProgram();
+    Parser(std::unique_ptr<lexer::Lexer> lexer);
+    std::unique_ptr<ast::Program> parseProgram();
 
   private:
-    lexer::Lexer *lexer_;
+    std::unique_ptr<lexer::Lexer>  lexer_;
     token::Token currentToken_;
     token::Token peekToken_;
 

@@ -1,10 +1,12 @@
 #include "parser.h"
 #include "ast/Program.h"
 #include "lexer.h"
+#include <memory>
+#include <utility>
 
 namespace parser {
 
-parser::Parser::Parser(lexer::Lexer* lexer) : lexer_(lexer) {
+parser::Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
 
 }
 
@@ -13,8 +15,9 @@ void parser::Parser::nextToken(){
     peekToken_ = lexer_->nextToken();
 }
 
-ast::Program parser::Parser::parseProgram() {
-    return ast::Program();
+std::unique_ptr<ast::Program> parser::Parser::parseProgram() {
+    std::unique_ptr<ast::Program> program = std::make_unique<ast::Program>();
+    return nullptr; 
 }
 
 } // namespace parser
