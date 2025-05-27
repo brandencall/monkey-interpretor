@@ -1,38 +1,51 @@
 CXX = g++
-CXXFLAGS = -I$(PWD)/include
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude -I/usr/include/gtest
 LDFLAGS = -lgtest -lgtest_main -pthread
-OBJECTS = main.o token.o lexer.o repl.o
-TARGET = final 
-TEST_LEXER_OBJECTS = test_lexer.o token.o lexer.o 
-TEST_LEXER_BIN = test_lexer
 
-all: $(TARGET)
+SRC_DIR = src
+TEST_DIR = test
+INCLUDE_DIR = include
+OBJ_DIR = obj
+BIN_DIR = bin
 
-test_lexer: $(TEST_LEXER_BIN)
-	./$(TEST_LEXER_BIN)
+TARGET = $(BIN_DIR)/interpreter
+TEST_TARGET = $(BIN_DIR)/test
 
-token.o: src/token/token.cpp include/token.h
-	$(CXX) $(CXXFLAGS) -c src/token/token.cpp -o token.o
+# Find all source files, excluding test directory
+SOURCES = $(shell find $(SRC_DIR) -name '*.cpp')
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
-lexer.o: src/lexer/lexer.cpp include/lexer.h include/token.h
-	$(CXX) $(CXXFLAGS) -c src/lexer/lexer.cpp -o lexer.o
+# Find all test source files
+TEST_SOURCES = $(shell find $(TEST_DIR) -name '*.cpp')
+TEST_OBJECTS = $(TEST_SOURCES:$(TEST_DIR)/%.cpp=$(OBJ_DIR)/test/%.o)
 
-repl.o: src/repl/repl.cpp include/repl.h include/lexer.h include/token.h
-	$(CXX) $(CXXFLAGS) -c src/repl/repl.cpp -o repl.o
+# Combine objects for test target (exclude main.o, include shared objects)
+SHARED_OBJECTS = $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
+TEST_ALL_OBJECTS = $(TEST_OBJECTS) $(SHARED_OBJECTS)
 
-main.o: src/main.cpp include/repl.h
-	$(CXX) $(CXXFLAGS) -c src/main.cpp -o main.o
+all: $(TARGET) $(TEST_TARGET)
 
-test_lexer.o: src/test/test_lexer.cpp include/lexer.h include/token.h
-	$(CXX) $(CXXFLAGS) -c src/test/test_lexer.cpp -o test_lexer.o
+$(TARGET): $(OBJECTS) | $(BIN_DIR)
+	$(CXX) $(OBJECTS) -o $@
 
-$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET)
+$(TEST_TARGET): $(TEST_ALL_OBJECTS) | $(BIN_DIR)
+	$(CXX) $(TEST_ALL_OBJECTS) -o $@ $(LDFLAGS)
 
-$(TEST_LEXER_BIN): $(TEST_LEXER_OBJECTS)
-	$(CXX) $(TEST_LEXER_OBJECTS) $(LDFLAGS) -o $(TEST_LEXER_BIN)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/test/%.o: $(TEST_DIR)/%.cpp | $(OBJ_DIR)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -f $(OBJECTS) $(TEST_LEXER_OBJECTS) $(TARGET) $(TEST_LEXER_BIN)
+	rm -rf $(OBJ_DIR)/* $(TARGET) $(TEST_TARGET)
 
-.PHONY: all clean test_lexer
+.PHONY: all clean
