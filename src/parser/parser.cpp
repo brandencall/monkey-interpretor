@@ -6,7 +6,9 @@
 #include "token.h"
 #include <iostream>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace parser {
 
@@ -24,7 +26,7 @@ void parser::Parser::nextToken() {
 std::unique_ptr<ast::Program> parser::Parser::parseProgram() {
     std::unique_ptr<ast::Program> program = std::make_unique<ast::Program>();
 
-    while (currentToken_.type != token::TokenType::END_OF_FILE) {
+    while (!curTokenIs(token::TokenType::END_OF_FILE)) {
         std::unique_ptr<ast::Statement> statement = parseStatement();
         if (statement != nullptr) {
             program->statements.push_back(std::move(statement));
@@ -33,6 +35,8 @@ std::unique_ptr<ast::Program> parser::Parser::parseProgram() {
     }
     return program;
 }
+
+std::vector<std::string> *parser::Parser::errors() { return &errors_; }
 
 std::unique_ptr<ast::Statement> parser::Parser::parseStatement() {
     switch (currentToken_.type) {
@@ -81,8 +85,16 @@ bool parser::Parser::expectPeek(token::TokenType tokenType) {
         nextToken();
         return true;
     } else {
+        peekError(tokenType);
         return false;
     }
+}
+
+void parser::Parser::peekError(token::TokenType tokenType) {
+    std::string err = "expected next token to be " +
+                      token::tokenTypeToString(tokenType) + ", got " +
+                      token::tokenTypeToString(peekToken_.type);
+    errors_.push_back(err);
 }
 
 } // namespace parser

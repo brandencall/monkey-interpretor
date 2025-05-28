@@ -6,9 +6,14 @@
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
+#include <vector>
 
-bool testLetStatement(ast::Statement *statement, std::string& name);
+bool testLetStatement(ast::Statement *statement, std::string &name);
+void checkParserErrors(parser::Parser *parser);
+std::string joinErrors(const std::vector<std::string> &errors);
 
 TEST(ParserTest, LetStatements) {
     std::string input = R"(
@@ -21,6 +26,8 @@ TEST(ParserTest, LetStatements) {
     parser::Parser parser = parser::Parser(std::move(lexer));
 
     std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
     EXPECT_NE(program, nullptr) << "program is a nullptr :(";
     EXPECT_EQ(program->statements.size(), 3) << "program size isn't correct";
 
@@ -38,24 +45,39 @@ TEST(ParserTest, LetStatements) {
     }
 }
 
-bool testLetStatement(ast::Statement *statement, std::string& name) {
+void checkParserErrors(parser::Parser *parser) {
+    const std::vector<std::string> *errors = parser->errors();
+    EXPECT_NE(errors, nullptr) << "How is the errors null?" << '\n';
+    EXPECT_EQ(errors->size(), 0) << "Parser had errrors:\n"
+                                 << joinErrors(*errors);
+}
 
-    EXPECT_EQ(statement->tokenLiteral(), "let") << "statement.tokenLiteral() not 'let'. got=" << statement->tokenLiteral();
+std::string joinErrors(const std::vector<std::string>& errors) {
 
-    auto* letStatement = dynamic_cast<ast::LetStatement*>(statement);
-    EXPECT_NE(letStatement, nullptr) << "statement not ast::LetStatement. got=" << typeid(*statement).name();
+    std::stringstream ss;
+    for (const auto& error : errors){
+        ss << error << "\n";
+    }
+    return ss.str();
+}
 
-    EXPECT_EQ(letStatement->name->value, name) << "letStatement->name->value not '" << name << "' got=" << letStatement->name->value;
+bool testLetStatement(ast::Statement *statement, std::string &name) {
 
-    EXPECT_EQ(letStatement->name->tokenLiteral(), name) << "letStatement->name->tokenLiteral not '" << name << "' got=" << letStatement->name->tokenLiteral();
+    EXPECT_EQ(statement->tokenLiteral(), "let")
+        << "statement.tokenLiteral() not 'let'. got="
+        << statement->tokenLiteral();
+
+    auto *letStatement = dynamic_cast<ast::LetStatement *>(statement);
+    EXPECT_NE(letStatement, nullptr)
+        << "statement not ast::LetStatement. got=" << typeid(*statement).name();
+
+    EXPECT_EQ(letStatement->name->value, name)
+        << "letStatement->name->value not '" << name
+        << "' got=" << letStatement->name->value;
+
+    EXPECT_EQ(letStatement->name->tokenLiteral(), name)
+        << "letStatement->name->tokenLiteral not '" << name
+        << "' got=" << letStatement->name->tokenLiteral();
 
     return true;
 }
-
-
-
-
-
-
-
-
