@@ -1,5 +1,6 @@
 #include "ast/LetStatement.h"
 #include "ast/Program.h"
+#include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "parser.h"
@@ -45,6 +46,34 @@ TEST(ParserTest, LetStatements) {
     }
 }
 
+TEST(ParserTest, ReturnStatement) {
+    std::string input = R"(
+    return 5;
+    return 10;
+    return 993322;
+    )";
+
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(";
+    EXPECT_EQ(program->statements.size(), 3) << "program size isn't correct";
+
+    for (const auto &statement : program->statements) {
+        auto *returnStatement =
+            dynamic_cast<ast::ReturnStatement *>(statement.get());
+        EXPECT_NE(returnStatement, nullptr)
+            << "statement not ast::ReturnStatement. got="
+            << typeid(statement).name();
+        EXPECT_EQ(returnStatement->tokenLiteral(), "return")
+            << "returnStatement.tokenLiteral() not 'return' got"
+            << returnStatement->tokenLiteral();
+    }
+}
+
 void checkParserErrors(parser::Parser *parser) {
     const std::vector<std::string> *errors = parser->errors();
     EXPECT_NE(errors, nullptr) << "How is the errors null?" << '\n';
@@ -52,10 +81,10 @@ void checkParserErrors(parser::Parser *parser) {
                                  << joinErrors(*errors);
 }
 
-std::string joinErrors(const std::vector<std::string>& errors) {
+std::string joinErrors(const std::vector<std::string> &errors) {
 
     std::stringstream ss;
-    for (const auto& error : errors){
+    for (const auto &error : errors) {
         ss << error << "\n";
     }
     return ss.str();

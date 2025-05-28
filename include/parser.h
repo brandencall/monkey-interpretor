@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast/Program.h"
+#include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "ast/LetStatement.h"
 #include "lexer.h"
@@ -26,6 +27,7 @@ class Parser {
     void nextToken();
     std::unique_ptr<ast::Statement> parseStatement();
     std::unique_ptr<ast::LetStatement> parseLetStatement();
+    std::unique_ptr<ast::ReturnStatement> parseReturnStatement();
     bool curTokenIs(token::TokenType tokenType);
     bool peekTokenIs(token::TokenType tokenType);
     bool expectPeek(token::TokenType tokenType);

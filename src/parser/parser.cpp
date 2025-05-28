@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "ast/Identifier.h"
 #include "ast/Program.h"
+#include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "token.h"
@@ -42,12 +43,14 @@ std::unique_ptr<ast::Statement> parser::Parser::parseStatement() {
     switch (currentToken_.type) {
     case token::TokenType::LET:
         return parseLetStatement();
+    case token::TokenType::RETURN:
+        return parseReturnStatement();
     default:
         return nullptr;
     }
 }
 
-std::unique_ptr<ast::LetStatement> parser::Parser::parseLetStatement() {
+std::unique_ptr<ast::LetStatement> Parser::parseLetStatement() {
     std::unique_ptr<ast::LetStatement> statement =
         std::make_unique<ast::LetStatement>();
     statement->token = currentToken_;
@@ -63,6 +66,21 @@ std::unique_ptr<ast::LetStatement> parser::Parser::parseLetStatement() {
     if (!expectPeek(token::TokenType::ASSIGN)) {
         return nullptr;
     }
+
+    // TODO: this is not write but throwing it in for now
+    while (!curTokenIs(token::TokenType::SEMICOLON)) {
+        nextToken();
+    }
+
+    return statement;
+}
+
+std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
+    std::unique_ptr<ast::ReturnStatement> statement =
+        std::make_unique<ast::ReturnStatement>();
+    statement->token = currentToken_;
+
+    nextToken();
 
     // TODO: this is not write but throwing it in for now
     while (!curTokenIs(token::TokenType::SEMICOLON)) {
