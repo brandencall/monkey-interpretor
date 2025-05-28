@@ -4,12 +4,6 @@
 
 namespace ast {
 
-Program::~Program() {
-    for (Statement *s : statements) {
-        delete s;
-    }
-}
-
 std::string Program::tokenLiteral() const {
     if (!statements.empty()) {
         return statements[0]->tokenLiteral();

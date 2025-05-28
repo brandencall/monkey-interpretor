@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ast/Program.h"
+#include "ast/Statement.h"
+#include "ast/LetStatement.h"
 #include "lexer.h"
 #include "token.h"
 #include <cstddef>
@@ -19,5 +21,10 @@ class Parser {
     token::Token peekToken_;
 
     void nextToken();
+    std::unique_ptr<ast::Statement> parseStatement();
+    std::unique_ptr<ast::LetStatement> parseLetStatement();
+    bool curTokenIs(token::TokenType tokenType);
+    bool peekTokenIs(token::TokenType tokenType);
+    bool expectPeek(token::TokenType tokenType);
 };
 } // namespace parser

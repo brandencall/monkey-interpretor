@@ -5,7 +5,6 @@
 #include "parser.h"
 #include <cstddef>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -32,7 +31,7 @@ TEST(ParserTest, LetStatements) {
     };
 
     for (size_t i = 0; i < expected.size(); ++i) {
-        ast::Statement *statement = program->statements[i];
+        ast::Statement *statement = program->statements[i].get();
         if (!testLetStatement(statement, expected[i])) {
             return;
         }

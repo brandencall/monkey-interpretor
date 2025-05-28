@@ -13,7 +13,7 @@ class LetStatement : public Statement {
     std::string tokenLiteral() const override;
     void statementNode() const override;
     token::Token token;
-    Identifier *name;
+    std::unique_ptr<Identifier> name;
     std::unique_ptr<Expression> value;
 };
 } // namespace ast

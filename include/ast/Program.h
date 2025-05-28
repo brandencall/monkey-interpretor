@@ -1,14 +1,14 @@
 #pragma once
 #include "Node.h"
 #include "ast/Statement.h"
+#include <memory>
 #include <vector>
 
 namespace ast {
 class Program : public Node {
   public:
     Program() = default;
-    ~Program();
     std::string tokenLiteral() const override;
-    std::vector<Statement *> statements;
+    std::vector<std::unique_ptr<Statement>> statements;
 };
 } // namespace ast
