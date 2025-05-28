@@ -13,18 +13,18 @@
 
 namespace parser {
 
-parser::Parser::Parser(std::unique_ptr<lexer::Lexer> lexer)
+Parser::Parser(std::unique_ptr<lexer::Lexer> lexer)
     : lexer_(std::move(lexer)) {
     nextToken();
     nextToken();
 }
 
-void parser::Parser::nextToken() {
+void Parser::nextToken() {
     currentToken_ = peekToken_;
     peekToken_ = lexer_->nextToken();
 }
 
-std::unique_ptr<ast::Program> parser::Parser::parseProgram() {
+std::unique_ptr<ast::Program> Parser::parseProgram() {
     std::unique_ptr<ast::Program> program = std::make_unique<ast::Program>();
 
     while (!curTokenIs(token::TokenType::END_OF_FILE)) {
@@ -37,9 +37,9 @@ std::unique_ptr<ast::Program> parser::Parser::parseProgram() {
     return program;
 }
 
-std::vector<std::string> *parser::Parser::errors() { return &errors_; }
+std::vector<std::string> *Parser::errors() { return &errors_; }
 
-std::unique_ptr<ast::Statement> parser::Parser::parseStatement() {
+std::unique_ptr<ast::Statement> Parser::parseStatement() {
     switch (currentToken_.type) {
     case token::TokenType::LET:
         return parseLetStatement();
@@ -90,15 +90,15 @@ std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
     return statement;
 }
 
-bool parser::Parser::curTokenIs(token::TokenType tokenType) {
+bool Parser::curTokenIs(token::TokenType tokenType) {
     return currentToken_.type == tokenType;
 }
 
-bool parser::Parser::peekTokenIs(token::TokenType tokenType) {
+bool Parser::peekTokenIs(token::TokenType tokenType) {
     return peekToken_.type == tokenType;
 }
 
-bool parser::Parser::expectPeek(token::TokenType tokenType) {
+bool Parser::expectPeek(token::TokenType tokenType) {
     if (peekTokenIs(tokenType)) {
         nextToken();
         return true;
@@ -108,7 +108,7 @@ bool parser::Parser::expectPeek(token::TokenType tokenType) {
     }
 }
 
-void parser::Parser::peekError(token::TokenType tokenType) {
+void Parser::peekError(token::TokenType tokenType) {
     std::string err = "expected next token to be " +
                       token::tokenTypeToString(tokenType) + ", got " +
                       token::tokenTypeToString(peekToken_.type);

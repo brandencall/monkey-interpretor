@@ -16,59 +16,59 @@ std::map<std::string, TokenType> keywords {
 
 std::string tokenTypeToString(TokenType type) {
     switch (type) {
-    case token::TokenType::ILLEGAL:
+    case TokenType::ILLEGAL:
         return "ILLEGAL";
-    case token::TokenType::END_OF_FILE:
+    case TokenType::END_OF_FILE:
         return "END_OF_FILE";
-    case token::TokenType::IDENT:
+    case TokenType::IDENT:
         return "IDENT";
-    case token::TokenType::INT:
+    case TokenType::INT:
         return "INT";
-    case token::TokenType::ASSIGN:
+    case TokenType::ASSIGN:
         return "=";
-    case token::TokenType::PLUS:
+    case TokenType::PLUS:
         return "+";
-    case token::TokenType::MINUS:
+    case TokenType::MINUS:
         return "-";
-    case token::TokenType::BANG:
+    case TokenType::BANG:
         return "!";
-    case token::TokenType::ASTERISK:
+    case TokenType::ASTERISK:
         return "*";
-    case token::TokenType::SLASH:
+    case TokenType::SLASH:
         return "/";
-    case token::TokenType::LT:
+    case TokenType::LT:
         return "<";
-    case token::TokenType::GT:
+    case TokenType::GT:
         return ">";
-    case token::TokenType::EQ:
+    case TokenType::EQ:
         return "==";
-    case token::TokenType::NOT_EQ:
+    case TokenType::NOT_EQ:
         return "!=";
-    case token::TokenType::COMMA:
+    case TokenType::COMMA:
         return ",";
-    case token::TokenType::SEMICOLON:
+    case TokenType::SEMICOLON:
         return ";";
-    case token::TokenType::LPAREN:
+    case TokenType::LPAREN:
         return "(";
-    case token::TokenType::RPAREN:
+    case TokenType::RPAREN:
         return ")";
-    case token::TokenType::LBRACE:
+    case TokenType::LBRACE:
         return "{";
-    case token::TokenType::RBRACE:
+    case TokenType::RBRACE:
         return "}";
-    case token::TokenType::FUNCTION:
+    case TokenType::FUNCTION:
         return "FUNCTION";
-    case token::TokenType::LET:
+    case TokenType::LET:
         return "LET";
-    case token::TokenType::TRUE:
+    case TokenType::TRUE:
         return "TRUE";
-    case token::TokenType::FALSE:
+    case TokenType::FALSE:
         return "FALSE";
-    case token::TokenType::IF:
+    case TokenType::IF:
         return "IF";
-    case token::TokenType::ELSE:
+    case TokenType::ELSE:
         return "ELSE";
-    case token::TokenType::RETURN:
+    case TokenType::RETURN:
         return "RETURN";
     default:
         return "UNKNOWN";
@@ -79,7 +79,7 @@ TokenType lookUpIdentifier(std::string identifier){
     if (keywords.count(identifier)){
         return keywords[identifier];
     }
-    return token::TokenType::IDENT;
+    return TokenType::IDENT;
 }
 
 } // namespace token
