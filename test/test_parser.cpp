@@ -93,11 +93,6 @@ TEST(ParserTest, TestString) {
     letStatement->value->token.literal = "anotherVar";
     letStatement->value->value = "anotherVar";
 
-    //    auto *ident = dynamic_cast<ast::Identifier
-    //    *>(letStatement->value.get()); if (ident) {
-    //        ident->value = "anotherVar";
-    //    }
-
     program.statements.push_back(std::move(letStatement));
 
     EXPECT_EQ(program.toString(), "let myvar = anotherVar;\n")
