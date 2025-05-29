@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-bool testLetStatement(ast::Statement *statement, std::string &name);
+void testLetStatement(ast::Statement *statement, std::string &name);
 void checkParserErrors(parser::Parser *parser);
 std::string joinErrors(const std::vector<std::string> &errors);
 
@@ -43,9 +43,7 @@ TEST(ParserTest, LetStatements) {
 
     for (size_t i = 0; i < expected.size(); ++i) {
         ast::Statement *statement = program->statements[i].get();
-        if (!testLetStatement(statement, expected[i])) {
-            return;
-        }
+        testLetStatement(statement, expected[i]);
     }
 }
 
@@ -122,8 +120,7 @@ std::string joinErrors(const std::vector<std::string> &errors) {
     return ss.str();
 }
 
-bool testLetStatement(ast::Statement *statement, std::string &name) {
-
+void testLetStatement(ast::Statement *statement, std::string &name) {
 
     EXPECT_EQ(statement->tokenLiteral(), "let")
         << "statement.tokenLiteral() not 'let'. got="
@@ -140,6 +137,4 @@ bool testLetStatement(ast::Statement *statement, std::string &name) {
     EXPECT_EQ(letStatement->name->tokenLiteral(), name)
         << "letStatement->name->tokenLiteral not '" << name
         << "' got=" << letStatement->name->tokenLiteral();
-
-    return true;
 }
