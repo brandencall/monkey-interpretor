@@ -12,6 +12,7 @@ class LetStatement : public Statement {
   public:
     std::string tokenLiteral() const override;
     void statementNode() const override;
+    std::string toString() const override;
     token::Token token;
     std::unique_ptr<Identifier> name;
     std::unique_ptr<Expression> value;

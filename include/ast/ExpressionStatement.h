@@ -8,12 +8,12 @@
 #include <string>
 
 namespace ast {
-class ReturnStatement: public Statement {
+class ExpressionStatement : public Statement {
   public:
     std::string tokenLiteral() const override;
     void statementNode() const override;
     std::string toString() const override;
     token::Token token;
-    std::unique_ptr<Expression> returnValue;
+    std::unique_ptr<Expression> expression;
 };
 } // namespace ast

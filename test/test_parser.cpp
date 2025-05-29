@@ -1,11 +1,16 @@
+#include "ast/Expression.h"
+#include "ast/Identifier.h"
 #include "ast/LetStatement.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "parser.h"
+#include "token.h"
+#include <algorithm>
 #include <cstddef>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -72,6 +77,33 @@ TEST(ParserTest, ReturnStatement) {
             << "returnStatement.tokenLiteral() not 'return' got"
             << returnStatement->tokenLiteral();
     }
+}
+
+TEST(ParserTest, TestString) {
+    ast::Program program = ast::Program();
+    std::unique_ptr<ast::LetStatement> letStatement =
+        std::make_unique<ast::LetStatement>();
+    letStatement->name = std::make_unique<ast::Identifier>();
+    letStatement->value = std::make_unique<ast::Identifier>();
+
+    letStatement->token.type = token::TokenType::LET;
+    letStatement->token.literal = "let";
+
+    letStatement->name->token.type = token::TokenType::IDENT;
+    letStatement->name->token.literal = "myvar";
+    letStatement->name->value = "myvar";
+
+    letStatement->value->token.type = token::TokenType::IDENT;
+    letStatement->value->token.literal = "anotherVar";
+
+    auto *ident = dynamic_cast<ast::Identifier *>(letStatement->value.get());
+    if (ident) {
+        ident->value = "anotherVar";
+    }
+    program.statements.push_back(std::move(letStatement));
+
+    EXPECT_EQ(program.toString(), "let myvar = anotherVar;\n")
+        << "program.toString() wrong. got= " << program.toString();
 }
 
 void checkParserErrors(parser::Parser *parser) {

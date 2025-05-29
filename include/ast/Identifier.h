@@ -8,8 +8,9 @@
 namespace ast {
 class Identifier : public Expression {
   public:
-    std::string tokenLiteral() const override;
     void expressionNode() const override;
+    std::string tokenLiteral() const override;
+    std::string toString() const override;
     token::Token token;
     std::string value;
 };
