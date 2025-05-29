@@ -7,10 +7,8 @@
 #include "lexer.h"
 #include "parser.h"
 #include "token.h"
-#include <algorithm>
 #include <cstddef>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -95,11 +93,13 @@ TEST(ParserTest, TestString) {
 
     letStatement->value->token.type = token::TokenType::IDENT;
     letStatement->value->token.literal = "anotherVar";
+    letStatement->value->value = "anotherVar";
 
-    auto *ident = dynamic_cast<ast::Identifier *>(letStatement->value.get());
-    if (ident) {
-        ident->value = "anotherVar";
-    }
+    //    auto *ident = dynamic_cast<ast::Identifier
+    //    *>(letStatement->value.get()); if (ident) {
+    //        ident->value = "anotherVar";
+    //    }
+
     program.statements.push_back(std::move(letStatement));
 
     EXPECT_EQ(program.toString(), "let myvar = anotherVar;\n")
@@ -123,6 +123,7 @@ std::string joinErrors(const std::vector<std::string> &errors) {
 }
 
 bool testLetStatement(ast::Statement *statement, std::string &name) {
+
 
     EXPECT_EQ(statement->tokenLiteral(), "let")
         << "statement.tokenLiteral() not 'let'. got="

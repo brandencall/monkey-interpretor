@@ -5,7 +5,6 @@
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "token.h"
-#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,8 +12,7 @@
 
 namespace parser {
 
-Parser::Parser(std::unique_ptr<lexer::Lexer> lexer)
-    : lexer_(std::move(lexer)) {
+Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     nextToken();
     nextToken();
 }

@@ -4,8 +4,6 @@
 
 namespace ast {
 
-void ReturnStatement::statementNode() const {}
-
 std::string ReturnStatement::tokenLiteral() const { return token.literal; }
 
 std::string ReturnStatement::toString() const {
