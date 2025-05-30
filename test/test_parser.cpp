@@ -11,19 +11,24 @@
 #include "lexer.h"
 #include "parser.h"
 #include "token.h"
-#include <cmath>
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 void testLetStatement(ast::Statement *statement, std::string &name);
 void checkParserErrors(parser::Parser *parser);
 std::string joinErrors(const std::vector<std::string> &errors);
 void testIntegerLiteral(ast::Expression *expression, int value);
+void testIdentifier(ast::Expression *expression, std::string value);
+void testLiteralExpression(const ast::Expression *expression, const std::variant<int, std::string> &expected);
+void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string> &left,
+                         const std::string &operator_, const std::variant<int, std::string> &right);
 
 TEST(ParserTest, LetStatements) {
     std::string input = R"(
@@ -343,4 +348,35 @@ void testIntegerLiteral(ast::Expression *expression, int value) {
                                         << '\n';
     EXPECT_EQ(integer->tokenLiteral(), std::to_string(value))
         << "integer->tokenLiteral() is not " << value << ". got=" << integer->tokenLiteral() << '\n';
+}
+
+void testIdentifier(ast::Expression *expression, std::string value) {
+    auto *ident = dynamic_cast<ast::Identifier *>(expression);
+    EXPECT_NE(ident, nullptr) << "expression is not an Identifier. got=" << typeid(*expression).name() << '\n';
+    EXPECT_EQ(ident->value, value) << "ident->value is not " << value << ". got=" << ident->value << '\n';
+    EXPECT_EQ(ident->tokenLiteral(), value) << "ident->value is not " << value << ". got=" << ident->value << '\n';
+}
+
+void testLiteralExpression(ast::Expression *expression, const std::variant<int, std::string> &expected) {
+    std::visit(
+        [&](const auto &value) {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, int>) {
+                testIntegerLiteral(expression, value);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                testIdentifier(expression, value);
+            } else {
+                ADD_FAILURE() << "Type of expected not handled. Got type: " << typeid(value).name();
+            }
+        },
+        expected);
+}
+
+void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string> &left,
+                         const std::string &operator_, const std::variant<int, std::string> &right) {
+    auto *opExp = dynamic_cast<const ast::InfixExpression *>(exp);
+    EXPECT_NE(opExp, nullptr) << "expression is not an InfixExpression. got=" << typeid(*opExp).name() << '\n';
+    testLiteralExpression(opExp->left.get(), left);
+    EXPECT_EQ(opExp->oper, operator_) << "Operator mismatch. Got: " << opExp->oper << ", Expected: " << operator_;
+    testLiteralExpression(opExp->right.get(), right);
 }
