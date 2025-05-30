@@ -113,4 +113,12 @@ void Parser::peekError(token::TokenType tokenType) {
     errors_.push_back(err);
 }
 
+void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn){
+    prefixParseFns[tokenType] = fn;
+}
+
+void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn){
+    infixParseFns[tokenType] = fn;
+}
+
 } // namespace parser

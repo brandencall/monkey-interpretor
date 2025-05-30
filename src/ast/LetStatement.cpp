@@ -1,11 +1,8 @@
 #include "ast/LetStatement.h"
-#include <iostream>
 #include <sstream>
 #include <string>
 
 namespace ast {
-
-void LetStatement::statementNode() const {}
 
 std::string LetStatement::tokenLiteral() const { return token.literal; }
 

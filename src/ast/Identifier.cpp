@@ -1,5 +1,4 @@
 #include "ast/Identifier.h"
-#include <iostream>
 #include <string>
 
 namespace ast {
