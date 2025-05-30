@@ -2,6 +2,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
 #include "ast/Program.h"
@@ -27,6 +28,22 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::INT, [this]() { return parseIntegerLiteral(); });
     registerPrefix(token::TokenType::BANG, [this]() { return parsePrefixExpression(); });
     registerPrefix(token::TokenType::MINUS, [this]() { return parsePrefixExpression(); });
+    registerInfix(token::TokenType::PLUS,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::MINUS,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::SLASH,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::ASTERISK,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::EQ,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::NOT_EQ,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::LT,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::GT,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
 }
 
 void Parser::nextToken() {
@@ -110,13 +127,24 @@ std::unique_ptr<ast::ExpressionStatement> Parser::parseExpressionStatement() {
     return statement;
 }
 
-
-std::unique_ptr<ast::PrefixExpression> Parser::parsePrefixExpression(){
+std::unique_ptr<ast::PrefixExpression> Parser::parsePrefixExpression() {
     std::unique_ptr<ast::PrefixExpression> expression = std::make_unique<ast::PrefixExpression>();
     expression->token = currentToken_;
     expression->oper = currentToken_.literal;
     nextToken();
     expression->right = parseExpression(Precedence::PREFIX);
+    return expression;
+}
+
+std::unique_ptr<ast::InfixExpression> Parser::parseInfixExpression(std::unique_ptr<ast::Expression> left) {
+    std::unique_ptr<ast::InfixExpression> expression = std::make_unique<ast::InfixExpression>();
+    expression->token = currentToken_;
+    expression->oper = currentToken_.literal;
+    expression->left = std::move(left);
+
+    Precedence precedence = curPrecedence();
+    nextToken();
+    expression->right = parseExpression(precedence);
     return expression;
 }
 
@@ -140,6 +168,22 @@ void Parser::peekError(token::TokenType tokenType) {
     errors_.push_back(err);
 }
 
+Parser::Precedence Parser::peekPrecedence() {
+    auto precedence = precedences_.find(peekToken_.type);
+    if (precedence != precedences_.end()) {
+        return precedence->second;
+    }
+    return Precedence::LOWEST;
+}
+
+Parser::Precedence Parser::curPrecedence() {
+    auto precedence = precedences_.find(currentToken_.type);
+    if (precedence != precedences_.end()) {
+        return precedence->second;
+    }
+    return Precedence::LOWEST;
+}
+
 void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn) { prefixParseFns[tokenType] = fn; }
 
 void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn) { infixParseFns[tokenType] = fn; }
@@ -151,10 +195,20 @@ std::unique_ptr<ast::Expression> Parser::parseExpression(Parser::Precedence prec
         return nullptr;
     }
     std::unique_ptr<ast::Expression> leftExpression = prefix->second();
+
+    while (!peekTokenIs(token::TokenType::SEMICOLON) && precedence < peekPrecedence()) {
+        auto infix = infixParseFns.find(peekToken_.type);
+        if (infix == infixParseFns.end()) {
+            return leftExpression;
+        }
+        nextToken();
+        leftExpression = infix->second(std::move(leftExpression));
+    }
+
     return leftExpression;
 }
 
-void Parser::noPrefixError(token::TokenType tokenType){
+void Parser::noPrefixError(token::TokenType tokenType) {
     std::string err = "no prefix parse function for " + token::tokenTypeToString(tokenType) + " found";
     errors_.push_back(err);
 }

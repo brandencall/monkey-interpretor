@@ -1,6 +1,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
 #include "ast/PrefixExpression.h"
@@ -190,6 +191,119 @@ TEST(ParserTest, PrefixExpressions) {
     }
 }
 
+TEST(ParserTest, InfixExpressions) {
+    struct Infix {
+        std::string input;
+        int leftValue;
+        std::string oper;
+        int rightValue;
+    };
+    Infix infixTests[8] = {
+        {"5 + 5;", 5, "+", 5}, {"5 - 5;", 5, "-", 5}, {"5 * 5;", 5, "*", 5},   {"5 / 5;", 5, "/", 5},
+        {"5 > 5;", 5, ">", 5}, {"5 < 5;", 5, "<", 5}, {"5 == 5;", 5, "==", 5}, {"5 != 5;", 5, "!=", 5},
+    };
+
+    for (Infix infix : infixTests) {
+        auto lexer = std::make_unique<lexer::Lexer>(infix.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+
+        EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+        EXPECT_EQ(program->statements.size(), 1)
+            << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+        auto *statement = program->statements[0].get();
+        auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
+        EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+        auto *exp = dynamic_cast<ast::InfixExpression *>(expression->expression.get());
+        EXPECT_NE(exp, nullptr) << "the expression->expression.get is not of type InfixExpression" << '\n';
+
+        EXPECT_EQ(exp->oper, infix.oper) << "exp.oper is not " << exp->oper << ". got=" << exp->oper << '\n';
+
+        ast::Expression *leftExp = exp->left.get();
+        testIntegerLiteral(leftExp, infix.leftValue);
+
+        EXPECT_EQ(exp->oper, infix.oper) << "exp.oper is not " << infix.oper << ". got=" << exp->oper << '\n';
+
+        ast::Expression *rightExp = exp->right.get();
+        testIntegerLiteral(rightExp, infix.rightValue);
+    }
+}
+
+TEST(ParserTest, OperatorPrecedenceParsing) {
+    struct TestStruct {
+        std::string input;
+        std::string expected;
+    };
+    TestStruct tests[13] = {
+        {
+            "-a * b",
+            "((-a) * b)\n",
+        },
+        {
+            "!-a",
+            "(!(-a))\n",
+        },
+        {
+            "a + b + c",
+            "((a + b) + c)\n",
+        },
+        {
+            "a + b - c",
+            "((a + b) - c)\n",
+        },
+        {
+            "a * b * c",
+            "((a * b) * c)\n",
+        },
+        {
+            "a * b / c",
+            "((a * b) / c)\n",
+        },
+        {
+            "a + b / c",
+            "(a + (b / c))\n",
+        },
+        {
+            "a + b * c + d / e - f",
+            "(((a + (b * c)) + (d / e)) - f)\n",
+        },
+        {
+            "3 + 4; -5 * 5",
+            "(3 + 4)\n((-5) * 5)\n",
+        },
+        {
+            "5 > 4 == 3 < 4",
+            "((5 > 4) == (3 < 4))\n",
+        },
+        {
+            "5 < 4 != 3 > 4",
+            "((5 < 4) != (3 > 4))\n",
+        },
+        {
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+        },
+        {
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+        },
+    };
+
+    for (TestStruct test : tests) {
+        auto lexer = std::make_unique<lexer::Lexer>(test.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+
+        std::string actual = program->toString();
+        EXPECT_EQ(actual, test.expected) << "expected=" << test.expected << ", got=" << actual << '\n';
+    }
+}
+
 void checkParserErrors(parser::Parser *parser) {
     const std::vector<std::string> *errors = parser->errors();
     EXPECT_NE(errors, nullptr) << "How is the errors null?" << '\n';
@@ -228,5 +342,5 @@ void testIntegerLiteral(ast::Expression *expression, int value) {
     EXPECT_EQ(integer->valueInt, value) << "integer->valueInt is not " << value << ". got=" << integer->valueInt
                                         << '\n';
     EXPECT_EQ(integer->tokenLiteral(), std::to_string(value))
-       << "integer->tokenLiteral() is not " << value << ". got=" << integer->tokenLiteral() << '\n';
+        << "integer->tokenLiteral() is not " << value << ". got=" << integer->tokenLiteral() << '\n';
 }
