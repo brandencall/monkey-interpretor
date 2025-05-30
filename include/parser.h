@@ -46,5 +46,6 @@ class Parser {
     void registerInfix(token::TokenType tokenType, infixParseFn fn);
     std::unique_ptr<ast::Expression> parseExpression(Precedence precidence);
     std::unique_ptr<ast::Expression> parseIdentifier();
+    std::unique_ptr<ast::Expression> parseIntegerLiteral();
 };
 } // namespace parser

@@ -1,6 +1,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
@@ -119,6 +120,33 @@ TEST(ParserTest, IdentifierExpression) {
 
     EXPECT_EQ(ident->tokenLiteral(), "foobar")
         << "the identifier tokenLiteral is not foobar it is: " << ident->tokenLiteral() << '\n';
+}
+
+TEST(ParserTest, LiteralExpression) {
+    std::string input = "5;";
+
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    //NEED TO CHANGE TO INTEGERLITERAL
+    auto *ident = dynamic_cast<ast::IntegerLiteral*>(expression->expression.get());
+    EXPECT_NE(ident, nullptr) << "the expression->expression.get is not of type Identifier" << '\n';
+
+    EXPECT_EQ(ident->valueInt, 5) << "the identifier value is not 5 it is: " << ident->valueInt << '\n';
+
+    EXPECT_EQ(ident->tokenLiteral(), "5")
+        << "the identifier tokenLiteral is not 5 it is: " << ident->tokenLiteral() << '\n';
 }
 
 void checkParserErrors(parser::Parser *parser) {

@@ -2,13 +2,16 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/IntegerLiteral.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "token.h"
+#include <exception>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -20,6 +23,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     nextToken();
 
     registerPrefix(token::TokenType::IDENT, [this]() { return parseIdentifier(); });
+    registerPrefix(token::TokenType::INT, [this]() { return parseIntegerLiteral(); });
 }
 
 void Parser::nextToken() {
@@ -141,6 +145,18 @@ std::unique_ptr<ast::Expression> Parser::parseIdentifier() {
     identifier->token = currentToken_;
     identifier->value = currentToken_.literal;
     return identifier;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseIntegerLiteral(){
+    std::unique_ptr<ast::IntegerLiteral> literal = std::make_unique<ast::IntegerLiteral>();
+    literal->token = currentToken_;
+    literal->value = currentToken_.literal;
+    try {
+        literal->valueInt = std::stoi(currentToken_.literal);
+    } catch (const std::exception& e){
+        throw std::runtime_error("Invalid integer value in parseIntegerLiteral");
+    }
+    return literal;
 }
 
 } // namespace parser
