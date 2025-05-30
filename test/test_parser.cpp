@@ -65,21 +65,16 @@ TEST(ParserTest, ReturnStatement) {
     EXPECT_EQ(program->statements.size(), 3) << "program size isn't correct";
 
     for (const auto &statement : program->statements) {
-        auto *returnStatement =
-            dynamic_cast<ast::ReturnStatement *>(statement.get());
-        EXPECT_NE(returnStatement, nullptr)
-            << "statement not ast::ReturnStatement. got="
-            << typeid(statement).name();
+        auto *returnStatement = dynamic_cast<ast::ReturnStatement *>(statement.get());
+        EXPECT_NE(returnStatement, nullptr) << "statement not ast::ReturnStatement. got=" << typeid(statement).name();
         EXPECT_EQ(returnStatement->tokenLiteral(), "return")
-            << "returnStatement.tokenLiteral() not 'return' got"
-            << returnStatement->tokenLiteral();
+            << "returnStatement.tokenLiteral() not 'return' got" << returnStatement->tokenLiteral();
     }
 }
 
 TEST(ParserTest, TestString) {
     ast::Program program = ast::Program();
-    std::unique_ptr<ast::LetStatement> letStatement =
-        std::make_unique<ast::LetStatement>();
+    std::unique_ptr<ast::LetStatement> letStatement = std::make_unique<ast::LetStatement>();
     letStatement->name = std::make_unique<ast::Identifier>();
     letStatement->value = std::make_unique<ast::Identifier>();
 
@@ -115,26 +110,21 @@ TEST(ParserTest, IdentifierExpression) {
 
     auto *statement = program->statements[0].get();
     auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
-    EXPECT_NE(expression, nullptr)
-        << "the statement[0] is not an ExpressionStatement" << '\n';
+    EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
 
     auto *ident = dynamic_cast<ast::Identifier *>(expression->expression.get());
-    EXPECT_NE(ident, nullptr)
-        << "the expression->expression.get is not of type Identifier" << '\n';
+    EXPECT_NE(ident, nullptr) << "the expression->expression.get is not of type Identifier" << '\n';
 
-    EXPECT_EQ(ident->value, "foobar")
-        << "the identifier value is not foobar it is: " << ident->value << '\n';
+    EXPECT_EQ(ident->value, "foobar") << "the identifier value is not foobar it is: " << ident->value << '\n';
 
     EXPECT_EQ(ident->tokenLiteral(), "foobar")
-        << "the identifier tokenLiteral is not foobar it is: "
-        << ident->tokenLiteral() << '\n';
+        << "the identifier tokenLiteral is not foobar it is: " << ident->tokenLiteral() << '\n';
 }
 
 void checkParserErrors(parser::Parser *parser) {
     const std::vector<std::string> *errors = parser->errors();
     EXPECT_NE(errors, nullptr) << "How is the errors null?" << '\n';
-    EXPECT_EQ(errors->size(), 0) << "Parser had errrors:\n"
-                                 << joinErrors(*errors);
+    EXPECT_EQ(errors->size(), 0) << "Parser had errrors:\n" << joinErrors(*errors);
 }
 
 std::string joinErrors(const std::vector<std::string> &errors) {
@@ -149,18 +139,14 @@ std::string joinErrors(const std::vector<std::string> &errors) {
 void testLetStatement(ast::Statement *statement, std::string &name) {
 
     EXPECT_EQ(statement->tokenLiteral(), "let")
-        << "statement.tokenLiteral() not 'let'. got="
-        << statement->tokenLiteral();
+        << "statement.tokenLiteral() not 'let'. got=" << statement->tokenLiteral();
 
     auto *letStatement = dynamic_cast<ast::LetStatement *>(statement);
-    EXPECT_NE(letStatement, nullptr)
-        << "statement not ast::LetStatement. got=" << typeid(*statement).name();
+    EXPECT_NE(letStatement, nullptr) << "statement not ast::LetStatement. got=" << typeid(*statement).name();
 
     EXPECT_EQ(letStatement->name->value, name)
-        << "letStatement->name->value not '" << name
-        << "' got=" << letStatement->name->value;
+        << "letStatement->name->value not '" << name << "' got=" << letStatement->name->value;
 
     EXPECT_EQ(letStatement->name->tokenLiteral(), name)
-        << "letStatement->name->tokenLiteral not '" << name
-        << "' got=" << letStatement->name->tokenLiteral();
+        << "letStatement->name->tokenLiteral not '" << name << "' got=" << letStatement->name->tokenLiteral();
 }
