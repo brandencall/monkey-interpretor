@@ -3,12 +3,14 @@
 #include "ast/Identifier.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
+#include "ast/PrefixExpression.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "parser.h"
 #include "token.h"
+#include <cmath>
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
@@ -20,6 +22,7 @@
 void testLetStatement(ast::Statement *statement, std::string &name);
 void checkParserErrors(parser::Parser *parser);
 std::string joinErrors(const std::vector<std::string> &errors);
+void testIntegerLiteral(ast::Expression *expression, int value);
 
 TEST(ParserTest, LetStatements) {
     std::string input = R"(
@@ -139,14 +142,52 @@ TEST(ParserTest, LiteralExpression) {
     auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
     EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
 
-    //NEED TO CHANGE TO INTEGERLITERAL
-    auto *ident = dynamic_cast<ast::IntegerLiteral*>(expression->expression.get());
-    EXPECT_NE(ident, nullptr) << "the expression->expression.get is not of type Identifier" << '\n';
+    auto *ident = dynamic_cast<ast::IntegerLiteral *>(expression->expression.get());
+    EXPECT_NE(ident, nullptr) << "the expression->expression.get is not of type IntegerLiteral" << '\n';
 
     EXPECT_EQ(ident->valueInt, 5) << "the identifier value is not 5 it is: " << ident->valueInt << '\n';
 
     EXPECT_EQ(ident->tokenLiteral(), "5")
         << "the identifier tokenLiteral is not 5 it is: " << ident->tokenLiteral() << '\n';
+}
+
+TEST(ParserTest, PrefixExpressions) {
+    struct Prefix {
+        std::string input;
+        std::string oper;
+        int integerValue;
+    };
+    Prefix prefixTests[2];
+    prefixTests[0].input = "!5;";
+    prefixTests[0].oper = "!";
+    prefixTests[0].integerValue = 5;
+    prefixTests[1].input = "-15;";
+    prefixTests[1].oper = "-";
+    prefixTests[1].integerValue = 15;
+
+    for (Prefix pre : prefixTests) {
+        auto lexer = std::make_unique<lexer::Lexer>(pre.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+
+        EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+        EXPECT_EQ(program->statements.size(), 1)
+            << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+        auto *statement = program->statements[0].get();
+        auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
+        EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+        auto *exp = dynamic_cast<ast::PrefixExpression *>(expression->expression.get());
+        EXPECT_NE(exp, nullptr) << "the expression->expression.get is not of type PrefixExpression" << '\n';
+
+        EXPECT_EQ(exp->oper, pre.oper) << "exp.oper is not " << exp->oper << ". got=" << exp->oper << '\n';
+
+        ast::Expression *rightExp = exp->right.get();
+        testIntegerLiteral(rightExp, pre.integerValue);
+    }
 }
 
 void checkParserErrors(parser::Parser *parser) {
@@ -167,14 +208,25 @@ std::string joinErrors(const std::vector<std::string> &errors) {
 void testLetStatement(ast::Statement *statement, std::string &name) {
 
     EXPECT_EQ(statement->tokenLiteral(), "let")
-        << "statement.tokenLiteral() not 'let'. got=" << statement->tokenLiteral();
+        << "statement.tokenLiteral() not 'let'. got=" << statement->tokenLiteral() << '\n';
 
     auto *letStatement = dynamic_cast<ast::LetStatement *>(statement);
-    EXPECT_NE(letStatement, nullptr) << "statement not ast::LetStatement. got=" << typeid(*statement).name();
+    EXPECT_NE(letStatement, nullptr) << "statement not ast::LetStatement. got=" << typeid(*statement).name() << '\n';
 
     EXPECT_EQ(letStatement->name->value, name)
-        << "letStatement->name->value not '" << name << "' got=" << letStatement->name->value;
+        << "letStatement->name->value not '" << name << "' got=" << letStatement->name->value << '\n';
 
     EXPECT_EQ(letStatement->name->tokenLiteral(), name)
-        << "letStatement->name->tokenLiteral not '" << name << "' got=" << letStatement->name->tokenLiteral();
+        << "letStatement->name->tokenLiteral not '" << name << "' got=" << letStatement->name->tokenLiteral() << '\n';
+}
+
+void testIntegerLiteral(ast::Expression *expression, int value) {
+
+    auto *integer = dynamic_cast<ast::IntegerLiteral *>(expression);
+    EXPECT_NE(integer, nullptr) << "expression is not an IntegerLiteral. got=" << typeid(*expression).name() << '\n';
+
+    EXPECT_EQ(integer->valueInt, value) << "integer->valueInt is not " << value << ". got=" << integer->valueInt
+                                        << '\n';
+    EXPECT_EQ(integer->tokenLiteral(), std::to_string(value))
+       << "integer->tokenLiteral() is not " << value << ". got=" << integer->tokenLiteral() << '\n';
 }

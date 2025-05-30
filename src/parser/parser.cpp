@@ -3,6 +3,7 @@
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
 #include "ast/IntegerLiteral.h"
+#include "ast/PrefixExpression.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
@@ -24,6 +25,8 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
 
     registerPrefix(token::TokenType::IDENT, [this]() { return parseIdentifier(); });
     registerPrefix(token::TokenType::INT, [this]() { return parseIntegerLiteral(); });
+    registerPrefix(token::TokenType::BANG, [this]() { return parsePrefixExpression(); });
+    registerPrefix(token::TokenType::MINUS, [this]() { return parsePrefixExpression(); });
 }
 
 void Parser::nextToken() {
@@ -107,6 +110,16 @@ std::unique_ptr<ast::ExpressionStatement> Parser::parseExpressionStatement() {
     return statement;
 }
 
+
+std::unique_ptr<ast::PrefixExpression> Parser::parsePrefixExpression(){
+    std::unique_ptr<ast::PrefixExpression> expression = std::make_unique<ast::PrefixExpression>();
+    expression->token = currentToken_;
+    expression->oper = currentToken_.literal;
+    nextToken();
+    expression->right = parseExpression(Precedence::PREFIX);
+    return expression;
+}
+
 bool Parser::curTokenIs(token::TokenType tokenType) { return currentToken_.type == tokenType; }
 
 bool Parser::peekTokenIs(token::TokenType tokenType) { return peekToken_.type == tokenType; }
@@ -134,10 +147,16 @@ void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn) { infixP
 std::unique_ptr<ast::Expression> Parser::parseExpression(Parser::Precedence precedence) {
     auto prefix = prefixParseFns.find(currentToken_.type);
     if (prefix == prefixParseFns.end()) {
+        noPrefixError(currentToken_.type);
         return nullptr;
     }
     std::unique_ptr<ast::Expression> leftExpression = prefix->second();
     return leftExpression;
+}
+
+void Parser::noPrefixError(token::TokenType tokenType){
+    std::string err = "no prefix parse function for " + token::tokenTypeToString(tokenType) + " found";
+    errors_.push_back(err);
 }
 
 std::unique_ptr<ast::Expression> Parser::parseIdentifier() {
@@ -147,13 +166,13 @@ std::unique_ptr<ast::Expression> Parser::parseIdentifier() {
     return identifier;
 }
 
-std::unique_ptr<ast::Expression> Parser::parseIntegerLiteral(){
+std::unique_ptr<ast::Expression> Parser::parseIntegerLiteral() {
     std::unique_ptr<ast::IntegerLiteral> literal = std::make_unique<ast::IntegerLiteral>();
     literal->token = currentToken_;
     literal->value = currentToken_.literal;
     try {
         literal->valueInt = std::stoi(currentToken_.literal);
-    } catch (const std::exception& e){
+    } catch (const std::exception &e) {
         throw std::runtime_error("Invalid integer value in parseIntegerLiteral");
     }
     return literal;

@@ -3,6 +3,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/LetStatement.h"
+#include "ast/PrefixExpression.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
@@ -38,6 +39,7 @@ class Parser {
     std::unique_ptr<ast::LetStatement> parseLetStatement();
     std::unique_ptr<ast::ReturnStatement> parseReturnStatement();
     std::unique_ptr<ast::ExpressionStatement> parseExpressionStatement();
+    std::unique_ptr<ast::PrefixExpression> parsePrefixExpression();
     bool curTokenIs(token::TokenType tokenType);
     bool peekTokenIs(token::TokenType tokenType);
     bool expectPeek(token::TokenType tokenType);
@@ -45,6 +47,7 @@ class Parser {
     void registerPrefix(token::TokenType tokenType, prefixParseFn fn);
     void registerInfix(token::TokenType tokenType, infixParseFn fn);
     std::unique_ptr<ast::Expression> parseExpression(Precedence precidence);
+    void noPrefixError(token::TokenType tokenType);
     std::unique_ptr<ast::Expression> parseIdentifier();
     std::unique_ptr<ast::Expression> parseIntegerLiteral();
 };
