@@ -1,10 +1,13 @@
 #include "parser.h"
+#include "ast/Expression.h"
+#include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "token.h"
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -15,6 +18,9 @@ namespace parser {
 Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     nextToken();
     nextToken();
+
+    registerPrefix(token::TokenType::IDENT,
+                   [this]() { return parseIdentifier(); });
 }
 
 void Parser::nextToken() {
@@ -44,7 +50,7 @@ std::unique_ptr<ast::Statement> Parser::parseStatement() {
     case token::TokenType::RETURN:
         return parseReturnStatement();
     default:
-        return nullptr;
+        return parseExpressionStatement();
     }
 }
 
@@ -88,6 +94,19 @@ std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
     return statement;
 }
 
+std::unique_ptr<ast::ExpressionStatement> Parser::parseExpressionStatement() {
+    std::unique_ptr<ast::ExpressionStatement> statement =
+        std::make_unique<ast::ExpressionStatement>();
+    statement->token = currentToken_;
+    statement->expression = parseExpression(Precedence::LOWEST);
+
+    if (peekTokenIs(token::TokenType::SEMICOLON)) {
+        nextToken();
+    }
+
+    return statement;
+}
+
 bool Parser::curTokenIs(token::TokenType tokenType) {
     return currentToken_.type == tokenType;
 }
@@ -113,12 +132,30 @@ void Parser::peekError(token::TokenType tokenType) {
     errors_.push_back(err);
 }
 
-void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn){
+void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn) {
     prefixParseFns[tokenType] = fn;
 }
 
-void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn){
+void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn) {
     infixParseFns[tokenType] = fn;
+}
+
+std::unique_ptr<ast::Expression>
+Parser::parseExpression(Parser::Precedence precedence) {
+    auto prefix = prefixParseFns.find(currentToken_.type);
+    if (prefix == prefixParseFns.end()) {
+        return nullptr;
+    }
+    std::unique_ptr<ast::Expression> leftExpression = prefix->second();
+    return leftExpression;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseIdentifier() {
+    std::unique_ptr<ast::Identifier> identifier =
+        std::make_unique<ast::Identifier>();
+    identifier->token = currentToken_;
+    identifier->value = currentToken_.literal;
+    return identifier;
 }
 
 } // namespace parser

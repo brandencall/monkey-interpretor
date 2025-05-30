@@ -111,17 +111,20 @@ TEST(ParserTest, IdentifierExpression) {
 
     EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
     EXPECT_EQ(program->statements.size(), 1)
-        << "program size isn't correct: " << program->statements.size() << '\n';
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
     auto *statement = program->statements[0].get();
     auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
     EXPECT_NE(expression, nullptr)
         << "the statement[0] is not an ExpressionStatement" << '\n';
+
     auto *ident = dynamic_cast<ast::Identifier *>(expression->expression.get());
     EXPECT_NE(ident, nullptr)
         << "the expression->expression.get is not of type Identifier" << '\n';
 
     EXPECT_EQ(ident->value, "foobar")
         << "the identifier value is not foobar it is: " << ident->value << '\n';
+
     EXPECT_EQ(ident->tokenLiteral(), "foobar")
         << "the identifier tokenLiteral is not foobar it is: "
         << ident->tokenLiteral() << '\n';
