@@ -15,11 +15,8 @@ void REPL::start(std::ostream &out) {
             return;
         }
         lexer::Lexer lexer(line);
-        for (token::Token tok = lexer.nextToken();
-             tok.type != token::TokenType::END_OF_FILE;
-             tok = lexer.nextToken()) {
-            out << "{Type:" << token::tokenTypeToString(tok.type)
-                << " Literal:" << tok.literal << "}\n";
+        for (token::Token tok = lexer.nextToken(); tok.type != token::TokenType::END_OF_FILE; tok = lexer.nextToken()) {
+            out << "{Type:" << token::tokenTypeToString(tok.type) << " Literal:" << tok.literal << "}\n";
         }
     }
 }

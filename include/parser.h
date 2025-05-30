@@ -2,10 +2,10 @@
 
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/LetStatement.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
-#include "ast/LetStatement.h"
 #include "lexer.h"
 #include "token.h"
 #include <cstddef>
@@ -20,19 +20,11 @@ class Parser {
   public:
     Parser(std::unique_ptr<lexer::Lexer> lexer);
     std::unique_ptr<ast::Program> parseProgram();
-    std::vector<std::string>* errors();
-    enum class Precedence {
-        LOWEST = 0,
-        EQUALS,
-        LESSGREATER,
-        SUM,
-        PRODUCT,
-        PREFIX,
-        CALL
-    };
+    std::vector<std::string> *errors();
+    enum class Precedence { LOWEST = 0, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL };
 
   private:
-    std::unique_ptr<lexer::Lexer>  lexer_;
+    std::unique_ptr<lexer::Lexer> lexer_;
     token::Token currentToken_;
     token::Token peekToken_;
     std::vector<std::string> errors_;
@@ -50,8 +42,8 @@ class Parser {
     bool peekTokenIs(token::TokenType tokenType);
     bool expectPeek(token::TokenType tokenType);
     void peekError(token::TokenType tokenType);
-    void registerPrefix(token::TokenType tokenType, prefixParseFn fn); 
-    void registerInfix(token::TokenType tokenType, infixParseFn fn); 
+    void registerPrefix(token::TokenType tokenType, prefixParseFn fn);
+    void registerInfix(token::TokenType tokenType, infixParseFn fn);
     std::unique_ptr<ast::Expression> parseExpression(Precedence precidence);
     std::unique_ptr<ast::Expression> parseIdentifier();
 };

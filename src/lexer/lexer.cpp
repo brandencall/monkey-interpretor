@@ -4,10 +4,7 @@
 
 namespace lexer {
 
-Lexer::Lexer(const std::string &input)
-    : input_(input), position_(0), readPosition_(0), ch_(0) {
-    readChar();
-}
+Lexer::Lexer(const std::string &input) : input_(input), position_(0), readPosition_(0), ch_(0) { readChar(); }
 
 void Lexer::readChar() {
 
@@ -33,7 +30,7 @@ token::Token Lexer::nextToken() {
             std::string combinedChars;
             combinedChars += peekedCh;
             combinedChars += ch_;
-            token.literal = combinedChars; 
+            token.literal = combinedChars;
             token.type = token::TokenType::EQ;
         } else {
             token = newToken(token::TokenType::ASSIGN, ch_);
@@ -64,7 +61,7 @@ token::Token Lexer::nextToken() {
             std::string combinedChars;
             combinedChars += peekedCh;
             combinedChars += ch_;
-            token.literal = combinedChars; 
+            token.literal = combinedChars;
             token.type = token::TokenType::NOT_EQ;
         } else {
             token = newToken(token::TokenType::BANG, ch_);
@@ -135,13 +132,10 @@ std::string Lexer::readNumber() {
 }
 
 bool Lexer::isLetter(char character) {
-    return ('a' <= character && character <= 'z') ||
-           ('A' <= character && character <= 'Z') || character == '_';
+    return ('a' <= character && character <= 'z') || ('A' <= character && character <= 'Z') || character == '_';
 }
 
-bool Lexer::isDigit(char character) {
-    return '0' <= character && character <= '9';
-}
+bool Lexer::isDigit(char character) { return '0' <= character && character <= '9'; }
 
 void Lexer::skipWhitespace() {
     while (ch_ == ' ' || ch_ == '\t' || ch_ == '\n' || ch_ == '\r') {

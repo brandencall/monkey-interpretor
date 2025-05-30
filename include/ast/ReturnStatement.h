@@ -8,7 +8,7 @@
 #include <string>
 
 namespace ast {
-class ReturnStatement: public Statement {
+class ReturnStatement : public Statement {
   public:
     std::string tokenLiteral() const override;
     std::string toString() const override;

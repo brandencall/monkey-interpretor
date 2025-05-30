@@ -1,5 +1,5 @@
-#include <iostream>
 #include "repl.h"
+#include <iostream>
 
 int main() {
     std::cout << "Monkey Language Interpretor" << '\n';

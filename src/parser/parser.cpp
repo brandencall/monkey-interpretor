@@ -19,8 +19,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     nextToken();
     nextToken();
 
-    registerPrefix(token::TokenType::IDENT,
-                   [this]() { return parseIdentifier(); });
+    registerPrefix(token::TokenType::IDENT, [this]() { return parseIdentifier(); });
 }
 
 void Parser::nextToken() {
@@ -55,8 +54,7 @@ std::unique_ptr<ast::Statement> Parser::parseStatement() {
 }
 
 std::unique_ptr<ast::LetStatement> Parser::parseLetStatement() {
-    std::unique_ptr<ast::LetStatement> statement =
-        std::make_unique<ast::LetStatement>();
+    std::unique_ptr<ast::LetStatement> statement = std::make_unique<ast::LetStatement>();
     statement->token = currentToken_;
 
     if (!expectPeek(token::TokenType::IDENT)) {
@@ -80,8 +78,7 @@ std::unique_ptr<ast::LetStatement> Parser::parseLetStatement() {
 }
 
 std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
-    std::unique_ptr<ast::ReturnStatement> statement =
-        std::make_unique<ast::ReturnStatement>();
+    std::unique_ptr<ast::ReturnStatement> statement = std::make_unique<ast::ReturnStatement>();
     statement->token = currentToken_;
 
     nextToken();
@@ -95,8 +92,7 @@ std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
 }
 
 std::unique_ptr<ast::ExpressionStatement> Parser::parseExpressionStatement() {
-    std::unique_ptr<ast::ExpressionStatement> statement =
-        std::make_unique<ast::ExpressionStatement>();
+    std::unique_ptr<ast::ExpressionStatement> statement = std::make_unique<ast::ExpressionStatement>();
     statement->token = currentToken_;
     statement->expression = parseExpression(Precedence::LOWEST);
 
@@ -107,13 +103,9 @@ std::unique_ptr<ast::ExpressionStatement> Parser::parseExpressionStatement() {
     return statement;
 }
 
-bool Parser::curTokenIs(token::TokenType tokenType) {
-    return currentToken_.type == tokenType;
-}
+bool Parser::curTokenIs(token::TokenType tokenType) { return currentToken_.type == tokenType; }
 
-bool Parser::peekTokenIs(token::TokenType tokenType) {
-    return peekToken_.type == tokenType;
-}
+bool Parser::peekTokenIs(token::TokenType tokenType) { return peekToken_.type == tokenType; }
 
 bool Parser::expectPeek(token::TokenType tokenType) {
     if (peekTokenIs(tokenType)) {
@@ -126,22 +118,16 @@ bool Parser::expectPeek(token::TokenType tokenType) {
 }
 
 void Parser::peekError(token::TokenType tokenType) {
-    std::string err = "expected next token to be " +
-                      token::tokenTypeToString(tokenType) + ", got " +
+    std::string err = "expected next token to be " + token::tokenTypeToString(tokenType) + ", got " +
                       token::tokenTypeToString(peekToken_.type);
     errors_.push_back(err);
 }
 
-void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn) {
-    prefixParseFns[tokenType] = fn;
-}
+void Parser::registerPrefix(token::TokenType tokenType, prefixParseFn fn) { prefixParseFns[tokenType] = fn; }
 
-void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn) {
-    infixParseFns[tokenType] = fn;
-}
+void Parser::registerInfix(token::TokenType tokenType, infixParseFn fn) { infixParseFns[tokenType] = fn; }
 
-std::unique_ptr<ast::Expression>
-Parser::parseExpression(Parser::Precedence precedence) {
+std::unique_ptr<ast::Expression> Parser::parseExpression(Parser::Precedence precedence) {
     auto prefix = prefixParseFns.find(currentToken_.type);
     if (prefix == prefixParseFns.end()) {
         return nullptr;
@@ -151,8 +137,7 @@ Parser::parseExpression(Parser::Precedence precedence) {
 }
 
 std::unique_ptr<ast::Expression> Parser::parseIdentifier() {
-    std::unique_ptr<ast::Identifier> identifier =
-        std::make_unique<ast::Identifier>();
+    std::unique_ptr<ast::Identifier> identifier = std::make_unique<ast::Identifier>();
     identifier->token = currentToken_;
     identifier->value = currentToken_.literal;
     return identifier;

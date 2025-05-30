@@ -3,15 +3,10 @@
 
 namespace token {
 
-
-std::map<std::string, TokenType> keywords {
-    {"fn", token::TokenType::FUNCTION}, 
-    {"let", token::TokenType::LET}, 
-    {"true", token::TokenType::TRUE},
-    {"false", token::TokenType::FALSE}, 
-    {"if", token::TokenType::IF}, 
-    {"else", token::TokenType::ELSE}, 
-    {"return", token::TokenType::RETURN}, 
+std::map<std::string, TokenType> keywords{
+    {"fn", token::TokenType::FUNCTION},   {"let", token::TokenType::LET}, {"true", token::TokenType::TRUE},
+    {"false", token::TokenType::FALSE},   {"if", token::TokenType::IF},   {"else", token::TokenType::ELSE},
+    {"return", token::TokenType::RETURN},
 };
 
 std::string tokenTypeToString(TokenType type) {
@@ -75,8 +70,8 @@ std::string tokenTypeToString(TokenType type) {
     }
 }
 
-TokenType lookUpIdentifier(std::string identifier){
-    if (keywords.count(identifier)){
+TokenType lookUpIdentifier(std::string identifier) {
+    if (keywords.count(identifier)) {
         return keywords[identifier];
     }
     return TokenType::IDENT;
