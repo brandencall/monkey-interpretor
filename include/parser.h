@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast/BlockStatement.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/InfixExpression.h"
@@ -67,5 +68,7 @@ class Parser {
     std::unique_ptr<ast::Expression> parseIntegerLiteral();
     std::unique_ptr<ast::Expression> parseBoolean();
     std::unique_ptr<ast::Expression> parseGroupedExpression();
+    std::unique_ptr<ast::Expression> parseIfExpression();
+    std::unique_ptr<ast::BlockStatement> parseBlockStatement();
 };
 } // namespace parser

@@ -1,8 +1,10 @@
 #include "parser.h"
+#include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
@@ -32,6 +34,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::TRUE, [this]() { return parseBoolean(); });
     registerPrefix(token::TokenType::FALSE, [this]() { return parseBoolean(); });
     registerPrefix(token::TokenType::LPAREN, [this]() { return parseGroupedExpression(); });
+    registerPrefix(token::TokenType::IF, [this]() { return parseIfExpression(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -240,7 +243,7 @@ std::unique_ptr<ast::Expression> Parser::parseBoolean() {
     std::unique_ptr<ast::Boolean> boolean = std::make_unique<ast::Boolean>();
     boolean->token = currentToken_;
     boolean->value = currentToken_.literal;
-    if (currentToken_.literal == "true"){
+    if (currentToken_.literal == "true") {
         boolean->valueBool = true;
     } else if (currentToken_.literal == "false") {
         boolean->valueBool = false;
@@ -253,11 +256,47 @@ std::unique_ptr<ast::Expression> Parser::parseBoolean() {
 std::unique_ptr<ast::Expression> Parser::parseGroupedExpression() {
     nextToken();
     std::unique_ptr<ast::Expression> expression = parseExpression(Parser::Precedence::LOWEST);
-
-    if (!expectPeek(token::TokenType::RPAREN)){
+    if (!expectPeek(token::TokenType::RPAREN)) {
         return nullptr;
     }
     return expression;
 }
 
+std::unique_ptr<ast::Expression> Parser::parseIfExpression() {
+    std::unique_ptr<ast::IfExpression> expression = std::make_unique<ast::IfExpression>();
+    expression->token = currentToken_;
+    if (!expectPeek(token::TokenType::LPAREN)) {
+        return nullptr;
+    }
+    nextToken();
+    expression->condition = parseExpression(Precedence::LOWEST);
+    if (!expectPeek(token::TokenType::RPAREN)) {
+        return nullptr;
+    }
+    if (!expectPeek(token::TokenType::LBRACE)) {
+        return nullptr;
+    }
+    expression->consiquence = parseBlockStatement();
+    if (peekTokenIs(token::TokenType::ELSE)) {
+        nextToken();
+        if (!expectPeek(token::TokenType::LBRACE)){
+            return nullptr;
+        }
+        expression->alternative = parseBlockStatement();
+    }
+    return expression;
+}
+
+std::unique_ptr<ast::BlockStatement> Parser::parseBlockStatement() {
+    std::unique_ptr<ast::BlockStatement> block = std::make_unique<ast::BlockStatement>();
+    nextToken();
+    while (!curTokenIs(token::TokenType::RBRACE) && !curTokenIs(token::TokenType::END_OF_FILE)) {
+        std::unique_ptr<ast::Statement> statement = parseStatement();
+        if (statement != nullptr) {
+            block->statements.push_back(std::move(statement));
+        }
+        nextToken();
+    }
+    return block;
+}
 } // namespace parser

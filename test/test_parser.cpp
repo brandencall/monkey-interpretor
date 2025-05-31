@@ -2,6 +2,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
+#include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
@@ -14,7 +15,6 @@
 #include "token.h"
 #include <cstddef>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -380,6 +380,72 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         std::string actual = program->toString();
         EXPECT_EQ(actual, test.expected) << "expected=" << test.expected << ", got=" << actual << '\n';
     }
+}
+
+TEST(ParserTest, IfExpression) {
+    std::string input = "if (x < y) { x }";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expressionStatement, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    auto express = expressionStatement->expression.get();
+    auto *expression = dynamic_cast<ast::IfExpression *>(express);
+    EXPECT_NE(expression, nullptr) << "the expression is not an IfExpression" << '\n';
+
+    testInfixExpression(expression->condition.get(), "x", "<", "y");
+    EXPECT_EQ(expression->consiquence->statements.size(), 1)
+        << "consiquence statement size isn't correct: " << expression->consiquence->statements.size() << '\n';
+
+    auto *consiquence = dynamic_cast<ast::ExpressionStatement *>(expression->consiquence->statements[0].get());
+    EXPECT_NE(consiquence, nullptr) << "the consiquence is not an ExpressionStatement" << '\n';
+
+    testIdentifier(consiquence->expression.get(), "x");
+    EXPECT_EQ(expression->alternative, nullptr) << "expression->alternative should be a nullptr here" << '\n';
+}
+
+TEST(ParserTest, IfElseExpression) {
+    std::string input = "if (x > y) { x } else { y }";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expressionStatement, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    auto express = expressionStatement->expression.get();
+    auto *expression = dynamic_cast<ast::IfExpression *>(express);
+    EXPECT_NE(expression, nullptr) << "the expression is not an IfExpression" << '\n';
+
+    testInfixExpression(expression->condition.get(), "x", ">", "y");
+    EXPECT_EQ(expression->consiquence->statements.size(), 1)
+        << "consiquence statement size isn't correct: " << expression->consiquence->statements.size() << '\n';
+
+    auto *consiquence = dynamic_cast<ast::ExpressionStatement *>(expression->consiquence->statements[0].get());
+    EXPECT_NE(consiquence, nullptr) << "the consiquence is not an ExpressionStatement" << '\n';
+
+    testIdentifier(consiquence->expression.get(), "x");
+    EXPECT_EQ(expression->alternative->statements.size(), 1)
+        << "alternative statement size isn't correct: " << expression->alternative->statements.size() << '\n';
+
+    auto *alternative = dynamic_cast<ast::ExpressionStatement *>(expression->alternative->statements[0].get());
+    EXPECT_NE(alternative, nullptr) << "the alternative is not an ExpressionStatement" << '\n';
+
+    testIdentifier(alternative->expression.get(), "y");
 }
 
 void checkParserErrors(parser::Parser *parser) {
