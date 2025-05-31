@@ -66,5 +66,6 @@ class Parser {
     std::unique_ptr<ast::Expression> parseIdentifier();
     std::unique_ptr<ast::Expression> parseIntegerLiteral();
     std::unique_ptr<ast::Expression> parseBoolean();
+    std::unique_ptr<ast::Expression> parseGroupedExpression();
 };
 } // namespace parser

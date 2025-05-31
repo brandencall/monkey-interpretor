@@ -31,6 +31,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::MINUS, [this]() { return parsePrefixExpression(); });
     registerPrefix(token::TokenType::TRUE, [this]() { return parseBoolean(); });
     registerPrefix(token::TokenType::FALSE, [this]() { return parseBoolean(); });
+    registerPrefix(token::TokenType::LPAREN, [this]() { return parseGroupedExpression(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -247,6 +248,16 @@ std::unique_ptr<ast::Expression> Parser::parseBoolean() {
         throw std::runtime_error("Invalid bool value in parseBoolean. got=" + currentToken_.literal);
     }
     return boolean;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseGroupedExpression() {
+    nextToken();
+    std::unique_ptr<ast::Expression> expression = parseExpression(Parser::Precedence::LOWEST);
+
+    if (!expectPeek(token::TokenType::RPAREN)){
+        return nullptr;
+    }
+    return expression;
 }
 
 } // namespace parser

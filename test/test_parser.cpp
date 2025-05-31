@@ -280,7 +280,7 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         std::string input;
         std::string expected;
     };
-    TestStruct tests[17] = {
+    TestStruct tests[22] = {
         {
             "true",
             "true\n",
@@ -348,6 +348,26 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         {
             "3 + 4 * 5 == 3 * 1 + 4 * 5",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))\n",
+        },
+        {
+            "1 + (2 + 3) + 4",
+            "((1 + (2 + 3)) + 4)\n",
+        },
+        {
+            "(5 + 5) * 2",
+            "((5 + 5) * 2)\n",
+        },
+        {
+            "2 / (5 + 5)",
+            "(2 / (5 + 5))\n",
+        },
+        {
+            "-(5 + 5)",
+            "(-(5 + 5))\n",
+        },
+        {
+            "!(true == true)",
+            "(!(true == true))\n",
         },
     };
 
