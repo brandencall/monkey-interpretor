@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "ast/Boolean.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
@@ -28,6 +29,8 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::INT, [this]() { return parseIntegerLiteral(); });
     registerPrefix(token::TokenType::BANG, [this]() { return parsePrefixExpression(); });
     registerPrefix(token::TokenType::MINUS, [this]() { return parsePrefixExpression(); });
+    registerPrefix(token::TokenType::TRUE, [this]() { return parseBoolean(); });
+    registerPrefix(token::TokenType::FALSE, [this]() { return parseBoolean(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -230,6 +233,20 @@ std::unique_ptr<ast::Expression> Parser::parseIntegerLiteral() {
         throw std::runtime_error("Invalid integer value in parseIntegerLiteral");
     }
     return literal;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseBoolean() {
+    std::unique_ptr<ast::Boolean> boolean = std::make_unique<ast::Boolean>();
+    boolean->token = currentToken_;
+    boolean->value = currentToken_.literal;
+    if (currentToken_.literal == "true"){
+        boolean->valueBool = true;
+    } else if (currentToken_.literal == "false") {
+        boolean->valueBool = false;
+    } else {
+        throw std::runtime_error("Invalid bool value in parseBoolean. got=" + currentToken_.literal);
+    }
+    return boolean;
 }
 
 } // namespace parser

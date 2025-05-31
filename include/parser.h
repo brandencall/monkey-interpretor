@@ -65,5 +65,6 @@ class Parser {
     void noPrefixError(token::TokenType tokenType);
     std::unique_ptr<ast::Expression> parseIdentifier();
     std::unique_ptr<ast::Expression> parseIntegerLiteral();
+    std::unique_ptr<ast::Expression> parseBoolean();
 };
 } // namespace parser

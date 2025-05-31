@@ -1,3 +1,4 @@
+#include "ast/Boolean.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/Identifier.h"
@@ -13,6 +14,7 @@
 #include "token.h"
 #include <cstddef>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -24,11 +26,12 @@
 void testLetStatement(ast::Statement *statement, std::string &name);
 void checkParserErrors(parser::Parser *parser);
 std::string joinErrors(const std::vector<std::string> &errors);
-void testIntegerLiteral(ast::Expression *expression, int value);
-void testIdentifier(ast::Expression *expression, std::string value);
-void testLiteralExpression(const ast::Expression *expression, const std::variant<int, std::string> &expected);
-void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string> &left,
-                         const std::string &operator_, const std::variant<int, std::string> &right);
+void testIntegerLiteral(const ast::Expression *expression, int value);
+void testIdentifier(const ast::Expression *expression, std::string value);
+void testBooleanLiteral(const ast::Expression *expression, bool value);
+void testLiteralExpression(const ast::Expression *expression, const std::variant<int, std::string, bool> &expected);
+void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string, bool> &left,
+                         const std::string &operator_, const std::variant<int, std::string, bool> &right);
 
 TEST(ParserTest, LetStatements) {
     std::string input = R"(
@@ -157,6 +160,32 @@ TEST(ParserTest, LiteralExpression) {
         << "the identifier tokenLiteral is not 5 it is: " << ident->tokenLiteral() << '\n';
 }
 
+TEST(ParserTest, BooleanExpression) {
+    std::string input = "true;";
+
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expression = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expression, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    auto *boolean = dynamic_cast<ast::Boolean *>(expression->expression.get());
+    EXPECT_NE(boolean, nullptr) << "the expression->expression.get is not of type Boolean" << '\n';
+
+    EXPECT_EQ(boolean->valueBool, true) << "the identifier value is not true it is: " << boolean->value << '\n';
+
+    EXPECT_EQ(boolean->tokenLiteral(), "true")
+        << "the identifier tokenLiteral is not true it is: " << boolean->tokenLiteral() << '\n';
+}
+
 TEST(ParserTest, PrefixExpressions) {
     struct Prefix {
         std::string input;
@@ -199,13 +228,22 @@ TEST(ParserTest, PrefixExpressions) {
 TEST(ParserTest, InfixExpressions) {
     struct Infix {
         std::string input;
-        int leftValue;
+        std::variant<int, std::string, bool> leftValue;
         std::string oper;
-        int rightValue;
+        std::variant<int, std::string, bool> rightValue;
     };
-    Infix infixTests[8] = {
-        {"5 + 5;", 5, "+", 5}, {"5 - 5;", 5, "-", 5}, {"5 * 5;", 5, "*", 5},   {"5 / 5;", 5, "/", 5},
-        {"5 > 5;", 5, ">", 5}, {"5 < 5;", 5, "<", 5}, {"5 == 5;", 5, "==", 5}, {"5 != 5;", 5, "!=", 5},
+    Infix infixTests[11] = {
+        {"5 + 5;", 5, "+", 5},
+        {"5 - 5;", 5, "-", 5},
+        {"5 * 5;", 5, "*", 5},
+        {"5 / 5;", 5, "/", 5},
+        {"5 > 5;", 5, ">", 5},
+        {"5 < 5;", 5, "<", 5},
+        {"5 == 5;", 5, "==", 5},
+        {"5 != 5;", 5, "!=", 5},
+        {"true == true", true, "==", true},
+        {"true != false", true, "!=", false},
+        {"false == false", false, "==", false},
     };
 
     for (Infix infix : infixTests) {
@@ -229,12 +267,12 @@ TEST(ParserTest, InfixExpressions) {
         EXPECT_EQ(exp->oper, infix.oper) << "exp.oper is not " << exp->oper << ". got=" << exp->oper << '\n';
 
         ast::Expression *leftExp = exp->left.get();
-        testIntegerLiteral(leftExp, infix.leftValue);
+        testLiteralExpression(leftExp, infix.leftValue);
 
         EXPECT_EQ(exp->oper, infix.oper) << "exp.oper is not " << infix.oper << ". got=" << exp->oper << '\n';
 
         ast::Expression *rightExp = exp->right.get();
-        testIntegerLiteral(rightExp, infix.rightValue);
+        testLiteralExpression(rightExp, infix.rightValue);
     }
 }
 
@@ -243,7 +281,23 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         std::string input;
         std::string expected;
     };
-    TestStruct tests[13] = {
+    TestStruct tests[17] = {
+        {
+            "true",
+            "true\n",
+        },
+        {
+            "false",
+            "false\n",
+        },
+        {
+            "3 > 5 == false",
+            "((3 > 5) == false)\n",
+        },
+        {
+            "3 < 5 == true",
+            "((3 < 5) == true)\n",
+        },
         {
             "-a * b",
             "((-a) * b)\n",
@@ -339,9 +393,9 @@ void testLetStatement(ast::Statement *statement, std::string &name) {
         << "letStatement->name->tokenLiteral not '" << name << "' got=" << letStatement->name->tokenLiteral() << '\n';
 }
 
-void testIntegerLiteral(ast::Expression *expression, int value) {
+void testIntegerLiteral(const ast::Expression *expression, int value) {
 
-    auto *integer = dynamic_cast<ast::IntegerLiteral *>(expression);
+    auto *integer = dynamic_cast<const ast::IntegerLiteral *>(expression);
     EXPECT_NE(integer, nullptr) << "expression is not an IntegerLiteral. got=" << typeid(*expression).name() << '\n';
 
     EXPECT_EQ(integer->valueInt, value) << "integer->valueInt is not " << value << ". got=" << integer->valueInt
@@ -350,14 +404,21 @@ void testIntegerLiteral(ast::Expression *expression, int value) {
         << "integer->tokenLiteral() is not " << value << ". got=" << integer->tokenLiteral() << '\n';
 }
 
-void testIdentifier(ast::Expression *expression, std::string value) {
-    auto *ident = dynamic_cast<ast::Identifier *>(expression);
+void testIdentifier(const ast::Expression *expression, std::string value) {
+    auto *ident = dynamic_cast<const ast::Identifier *>(expression);
     EXPECT_NE(ident, nullptr) << "expression is not an Identifier. got=" << typeid(*expression).name() << '\n';
     EXPECT_EQ(ident->value, value) << "ident->value is not " << value << ". got=" << ident->value << '\n';
     EXPECT_EQ(ident->tokenLiteral(), value) << "ident->value is not " << value << ". got=" << ident->value << '\n';
 }
 
-void testLiteralExpression(ast::Expression *expression, const std::variant<int, std::string> &expected) {
+void testBooleanLiteral(const ast::Expression *expression, bool value) {
+    auto *boolean = dynamic_cast<const ast::Boolean *>(expression);
+    EXPECT_NE(boolean, nullptr) << "expression is not Boolean. got=" << typeid(*expression).name() << '\n';
+    EXPECT_EQ(boolean->valueBool, value) << "boolean->valueBool is not " << value << ". got=" << boolean->valueBool
+                                         << '\n';
+}
+
+void testLiteralExpression(const ast::Expression *expression, const std::variant<int, std::string, bool> &expected) {
     std::visit(
         [&](const auto &value) {
             using T = std::decay_t<decltype(value)>;
@@ -365,6 +426,8 @@ void testLiteralExpression(ast::Expression *expression, const std::variant<int, 
                 testIntegerLiteral(expression, value);
             } else if constexpr (std::is_same_v<T, std::string>) {
                 testIdentifier(expression, value);
+            } else if (std::is_same_v<T, bool>) {
+                testBooleanLiteral(expression, value);
             } else {
                 ADD_FAILURE() << "Type of expected not handled. Got type: " << typeid(value).name();
             }
@@ -372,8 +435,8 @@ void testLiteralExpression(ast::Expression *expression, const std::variant<int, 
         expected);
 }
 
-void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string> &left,
-                         const std::string &operator_, const std::variant<int, std::string> &right) {
+void testInfixExpression(const ast::Expression *exp, const std::variant<int, std::string, bool> &left,
+                         const std::string &operator_, const std::variant<int, std::string, bool> &right) {
     auto *opExp = dynamic_cast<const ast::InfixExpression *>(exp);
     EXPECT_NE(opExp, nullptr) << "expression is not an InfixExpression. got=" << typeid(*opExp).name() << '\n';
     testLiteralExpression(opExp->left.get(), left);
