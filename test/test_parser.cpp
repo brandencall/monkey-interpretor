@@ -190,15 +190,14 @@ TEST(ParserTest, PrefixExpressions) {
     struct Prefix {
         std::string input;
         std::string oper;
-        int integerValue;
+        std::variant<int, std::string, bool> value;
     };
-    Prefix prefixTests[2];
-    prefixTests[0].input = "!5;";
-    prefixTests[0].oper = "!";
-    prefixTests[0].integerValue = 5;
-    prefixTests[1].input = "-15;";
-    prefixTests[1].oper = "-";
-    prefixTests[1].integerValue = 15;
+    Prefix prefixTests[4] = {
+        {"!5;", "!", 5},
+        {"-15;", "-", 15},
+        {"!true;", "!", true},
+        {"!false;", "!", false},
+    };
 
     for (Prefix pre : prefixTests) {
         auto lexer = std::make_unique<lexer::Lexer>(pre.input);
@@ -221,7 +220,7 @@ TEST(ParserTest, PrefixExpressions) {
         EXPECT_EQ(exp->oper, pre.oper) << "exp.oper is not " << exp->oper << ". got=" << exp->oper << '\n';
 
         ast::Expression *rightExp = exp->right.get();
-        testIntegerLiteral(rightExp, pre.integerValue);
+        testLiteralExpression(rightExp, pre.value);
     }
 }
 
