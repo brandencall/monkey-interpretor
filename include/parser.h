@@ -3,6 +3,7 @@
 #include "ast/BlockStatement.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/Identifier.h"
 #include "ast/InfixExpression.h"
 #include "ast/LetStatement.h"
 #include "ast/PrefixExpression.h"
@@ -70,5 +71,7 @@ class Parser {
     std::unique_ptr<ast::Expression> parseGroupedExpression();
     std::unique_ptr<ast::Expression> parseIfExpression();
     std::unique_ptr<ast::BlockStatement> parseBlockStatement();
+    std::unique_ptr<ast::Expression> parseFunctionLiteral();
+    std::vector<std::unique_ptr<ast::Identifier>> parseFunctionParameters();
 };
 } // namespace parser

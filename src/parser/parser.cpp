@@ -3,6 +3,7 @@
 #include "ast/Boolean.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/FunctionLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
@@ -13,9 +14,11 @@
 #include "ast/Statement.h"
 #include "lexer.h"
 #include "token.h"
+#include <cstddef>
 #include <exception>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -35,6 +38,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::FALSE, [this]() { return parseBoolean(); });
     registerPrefix(token::TokenType::LPAREN, [this]() { return parseGroupedExpression(); });
     registerPrefix(token::TokenType::IF, [this]() { return parseIfExpression(); });
+    registerPrefix(token::TokenType::FUNCTION, [this]() { return parseFunctionLiteral(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -279,7 +283,7 @@ std::unique_ptr<ast::Expression> Parser::parseIfExpression() {
     expression->consiquence = parseBlockStatement();
     if (peekTokenIs(token::TokenType::ELSE)) {
         nextToken();
-        if (!expectPeek(token::TokenType::LBRACE)){
+        if (!expectPeek(token::TokenType::LBRACE)) {
             return nullptr;
         }
         expression->alternative = parseBlockStatement();
@@ -298,5 +302,44 @@ std::unique_ptr<ast::BlockStatement> Parser::parseBlockStatement() {
         nextToken();
     }
     return block;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseFunctionLiteral() {
+    std::unique_ptr<ast::FunctionLiteral> literal = std::make_unique<ast::FunctionLiteral>();
+    if (!expectPeek(token::TokenType::LPAREN)) {
+        return nullptr;
+    }
+    literal->parameters = parseFunctionParameters();
+    if (!expectPeek(token::TokenType::LBRACE)) {
+        return nullptr;
+    }
+    literal->body = parseBlockStatement();
+    return literal;
+}
+
+std::vector<std::unique_ptr<ast::Identifier>> Parser::parseFunctionParameters() {
+    std::vector<std::unique_ptr<ast::Identifier>> identifiers;
+    if (peekTokenIs(token::TokenType::RPAREN)) {
+        nextToken();
+        return identifiers;
+    }
+    nextToken();
+    std::unique_ptr<ast::Identifier> identifier = std::make_unique<ast::Identifier>();
+    identifier->token = currentToken_;
+    identifier->value = currentToken_.literal;
+    identifiers.push_back(std::move(identifier));
+    while (peekTokenIs(token::TokenType::COMMA)) {
+        nextToken();
+        nextToken();
+        std::unique_ptr<ast::Identifier> identifier = std::make_unique<ast::Identifier>();
+        identifier->token = currentToken_;
+        identifier->value = currentToken_.literal;
+        identifiers.push_back(std::move(identifier));
+    }
+    if (!expectPeek(token::TokenType::RPAREN)){
+        // cant return null or nullptr; going to throw an exception;
+        throw std::runtime_error("parseFunctionParameters didn't have a RPAREN in the correct spot");
+    }
+    return identifiers;
 }
 } // namespace parser

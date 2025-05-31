@@ -1,6 +1,7 @@
 #include "ast/Boolean.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/FunctionLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
@@ -446,6 +447,64 @@ TEST(ParserTest, IfElseExpression) {
     EXPECT_NE(alternative, nullptr) << "the alternative is not an ExpressionStatement" << '\n';
 
     testIdentifier(alternative->expression.get(), "y");
+}
+
+TEST(ParserTest, FunctionLiteralParsing) {
+    std::string input = "fn(x, y) { x + y; }";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expressionStatement, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    auto *function = dynamic_cast<ast::FunctionLiteral *>(expressionStatement->expression.get());
+    EXPECT_NE(function, nullptr) << "expressionStatement->expression is not a FunctionLiteral" << '\n';
+    EXPECT_EQ(function->parameters.size(), 2)
+        << "function parameters wrong. wanted 2 but got=" << function->parameters.size() << '\n';
+    testLiteralExpression(function->parameters[0].get(), "x");
+    testLiteralExpression(function->parameters[1].get(), "y");
+
+    EXPECT_EQ(function->body->statements.size(), 1)
+        << "function body statements is not 1. got=" << function->body->statements.size() << '\n';
+
+    auto *bodyStatement = dynamic_cast<ast::ExpressionStatement *>(function->body->statements[0].get());
+    EXPECT_NE(expressionStatement, nullptr) << "function body statement is not of type ExpressionStatement" << '\n';
+
+    testInfixExpression(bodyStatement->expression.get(), "x", "+", "y");
+}
+
+TEST(ParserTest, ParameterParsing) {
+    struct Params {
+        std::string input;
+        std::vector<std::string> expectedParams;
+    };
+    Params tests[3] = {
+        {"fn() {};", {}},
+        {"fn(x) {};", {"x"}},
+        {"fn(x, y, z) {};", {"x", "y", "z"}},
+    };
+
+    for (Params test : tests) {
+        auto lexer = std::make_unique<lexer::Lexer>(test.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+        auto *statement = program->statements[0].get();
+        auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+        auto *function = dynamic_cast<ast::FunctionLiteral *>(expressionStatement->expression.get());
+        EXPECT_EQ(function->parameters.size(), test.expectedParams.size())
+            << "length of parameters wrong. wanted " << test.expectedParams.size()
+            << ", got=" << function->parameters.size() << '\n';
+        for (size_t i = 0; i < test.expectedParams.size(); i++) {
+            testLiteralExpression(function->parameters[i].get(), test.expectedParams[i]);
+        }
+    }
 }
 
 void checkParserErrors(parser::Parser *parser) {
