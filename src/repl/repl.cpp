@@ -1,8 +1,10 @@
 #include "repl.h"
 #include "lexer.h"
+#include "parser.h"
 #include "token.h"
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace repl {
 void REPL::start(std::ostream &out) {
@@ -14,10 +16,23 @@ void REPL::start(std::ostream &out) {
         if (line.empty()) {
             return;
         }
-        lexer::Lexer lexer(line);
-        for (token::Token tok = lexer.nextToken(); tok.type != token::TokenType::END_OF_FILE; tok = lexer.nextToken()) {
-            out << "{Type:" << token::tokenTypeToString(tok.type) << " Literal:" << tok.literal << "}\n";
+        auto lexer = std::make_unique<lexer::Lexer>(line);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+
+        if (parser.errors()->size() != 0) {
+            printParserErrors(out, *parser.errors());
+            continue;
         }
+        out << program->toString() << '\n';
+    }
+}
+void REPL::printParserErrors(std::ostream &out, std::vector<std::string> errors) {
+    out << MONKEY_FACE << '\n';
+    out << "We ran into an issue!" << '\n';
+    out << "parser errors:" << '\n';
+    for (const auto &err : errors) {
+        out << "\t" << err << "\n";
     }
 }
 } // namespace repl
