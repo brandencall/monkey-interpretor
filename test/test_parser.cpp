@@ -1,4 +1,5 @@
 #include "ast/Boolean.h"
+#include "ast/CallExpression.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
@@ -16,6 +17,7 @@
 #include "token.h"
 #include <cstddef>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -35,54 +37,63 @@ void testInfixExpression(const ast::Expression *exp, const std::variant<int, std
                          const std::string &operator_, const std::variant<int, std::string, bool> &right);
 
 TEST(ParserTest, LetStatements) {
-    std::string input = R"(
-    let x = 5;
-    let y = 10;
-    let foobar = 838383;
-    )";
-
-    auto lexer = std::make_unique<lexer::Lexer>(input);
-    parser::Parser parser = parser::Parser(std::move(lexer));
-
-    std::unique_ptr<ast::Program> program = parser.parseProgram();
-    checkParserErrors(&parser);
-
-    EXPECT_NE(program, nullptr) << "program is a nullptr :(";
-    EXPECT_EQ(program->statements.size(), 3) << "program size isn't correct";
-
-    std::vector<std::string> expected = {
-        "x",
-        "y",
-        "foobar",
+    struct LetStatements {
+        std::string input;
+        std::string expectedIdentifier;
+        std::variant<int, std::string, bool> expectedValue;
+    };
+    LetStatements tests[3] = {
+        {"let x = 5;", "x", 5},
+        {"let y = true;", "y", true},
+        {"let foobar = y;", "foobar", "y"},
     };
 
-    for (size_t i = 0; i < expected.size(); ++i) {
-        ast::Statement *statement = program->statements[i].get();
-        testLetStatement(statement, expected[i]);
+    for (LetStatements test : tests) {
+        auto lexer = std::make_unique<lexer::Lexer>(test.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+
+        EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+        EXPECT_EQ(program->statements.size(), 1)
+            << "program statement size isn't correct: " << program->statements.size() << '\n';
+
+        auto *statement = program->statements[0].get();
+        testLetStatement(statement, test.expectedIdentifier);
+        auto *letStatement = dynamic_cast<ast::LetStatement *>(statement);
+        testLiteralExpression(letStatement->value.get(), test.expectedValue);
     }
 }
 
 TEST(ParserTest, ReturnStatement) {
-    std::string input = R"(
-    return 5;
-    return 10;
-    return 993322;
-    )";
+    struct Return {
+        std::string input;
+        std::variant<int, std::string, bool> expectedValue;
+    };
+    Return tests[3] = {
+        {"return 5;", 5},
+        {"return true;", true},
+        {"return foobar;", "foobar"},
+    };
 
-    auto lexer = std::make_unique<lexer::Lexer>(input);
-    parser::Parser parser = parser::Parser(std::move(lexer));
+    for (Return test : tests) {
+        auto lexer = std::make_unique<lexer::Lexer>(test.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
 
-    std::unique_ptr<ast::Program> program = parser.parseProgram();
-    checkParserErrors(&parser);
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
 
-    EXPECT_NE(program, nullptr) << "program is a nullptr :(";
-    EXPECT_EQ(program->statements.size(), 3) << "program size isn't correct";
+        EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+        EXPECT_EQ(program->statements.size(), 1)
+            << "program statement size isn't correct: " << program->statements.size() << '\n';
 
-    for (const auto &statement : program->statements) {
-        auto *returnStatement = dynamic_cast<ast::ReturnStatement *>(statement.get());
-        EXPECT_NE(returnStatement, nullptr) << "statement not ast::ReturnStatement. got=" << typeid(statement).name();
+        auto *statement = program->statements[0].get();
+        auto *returnStatement = dynamic_cast<ast::ReturnStatement *>(statement);
+        EXPECT_NE(returnStatement, nullptr) << "statement is not a ReturnStatement" << '\n';
         EXPECT_EQ(returnStatement->tokenLiteral(), "return")
-            << "returnStatement.tokenLiteral() not 'return' got" << returnStatement->tokenLiteral();
+            << "returnStatement->tokenLiteral() is not 'return', got=" << returnStatement->tokenLiteral() << '\n';
+        testLiteralExpression(returnStatement->returnValue.get(), test.expectedValue);
     }
 }
 
@@ -281,7 +292,7 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         std::string input;
         std::string expected;
     };
-    TestStruct tests[22] = {
+    TestStruct tests[25] = {
         {
             "true",
             "true\n",
@@ -369,6 +380,18 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         {
             "!(true == true)",
             "(!(true == true))\n",
+        },
+        {
+            "a + add(b * c) + d",
+            "((a + add((b * c))) + d)\n",
+        },
+        {
+            "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))\n",
+        },
+        {
+            "add(a + b + c * d / f + g)",
+            "add((((a + b) + ((c * d) / f)) + g))\n",
         },
     };
 
@@ -503,6 +526,63 @@ TEST(ParserTest, ParameterParsing) {
             << ", got=" << function->parameters.size() << '\n';
         for (size_t i = 0; i < test.expectedParams.size(); i++) {
             testLiteralExpression(function->parameters[i].get(), test.expectedParams[i]);
+        }
+    }
+}
+
+TEST(ParserTest, ExpressionParsing) {
+    std::string input = "add(1, 2 * 3, 4 + 5);";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    EXPECT_NE(expressionStatement, nullptr) << "the statement[0] is not an ExpressionStatement" << '\n';
+
+    auto *callExpression = dynamic_cast<ast::CallExpression *>(expressionStatement->expression.get());
+    EXPECT_NE(callExpression, nullptr) << "expressionStatement->expression is not a CallExpression" << '\n';
+
+    testIdentifier(callExpression->function.get(), "add");
+    EXPECT_EQ(callExpression->arguments.size(), 3)
+        << "callExpression->arguments is the wrong length. got=" << callExpression->arguments.size() << '\n';
+    testLiteralExpression(callExpression->arguments[0].get(), 1);
+    testInfixExpression(callExpression->arguments[1].get(), 2, "*", 3);
+    testInfixExpression(callExpression->arguments[2].get(), 4, "+", 5);
+}
+
+TEST(ParserTest, ExpressionParameterParsing) {
+    struct Params {
+        std::string input;
+        std::string expectedIdent;
+        std::vector<std::string> expectedArgs;
+    };
+    Params tests[3] = {
+        {"add();", "add", {}},
+        {"add(1);", "add", {"1"}},
+        {"add(1, 2 * 3, 4 + 5);", "add", {"1", "(2 * 3)", "(4 + 5)"}},
+    };
+    for (Params test : tests) {
+        auto lexer = std::make_unique<lexer::Lexer>(test.input);
+        parser::Parser parser = parser::Parser(std::move(lexer));
+        std::unique_ptr<ast::Program> program = parser.parseProgram();
+        checkParserErrors(&parser);
+        auto *statement = program->statements[0].get();
+        auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+        auto *callExpression = dynamic_cast<ast::CallExpression *>(expressionStatement->expression.get());
+        EXPECT_NE(callExpression, nullptr) << "expressionStatement->expression is not a CallExpression" << '\n';
+        testIdentifier(callExpression->function.get(), test.expectedIdent);
+        EXPECT_EQ(callExpression->arguments.size(), test.expectedArgs.size())
+            << "callExpression->arguments is the wrong length. got=" << callExpression->arguments.size()
+            << ", wanted=" << test.expectedArgs.size() << '\n';
+        for (size_t i = 0; i < test.expectedArgs.size(); i++) {
+            EXPECT_EQ(callExpression->arguments[i]->toString(), test.expectedArgs[i])
+                << "argument " << i << "wrong. want=" << test.expectedArgs[i]
+                << ", got=" << callExpression->arguments[i]->toString() << '\n';
         }
     }
 }

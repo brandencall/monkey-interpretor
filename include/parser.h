@@ -45,7 +45,7 @@ class Parser {
         {token::TokenType::MINUS, Precedence::SUM},
         {token::TokenType::SLASH, Precedence::PRODUCT},
         {token::TokenType::ASTERISK, Precedence::PRODUCT},
-
+        {token::TokenType::LPAREN, Precedence::CALL},
     };
 
     void nextToken();
@@ -73,5 +73,7 @@ class Parser {
     std::unique_ptr<ast::BlockStatement> parseBlockStatement();
     std::unique_ptr<ast::Expression> parseFunctionLiteral();
     std::vector<std::unique_ptr<ast::Identifier>> parseFunctionParameters();
+    std::unique_ptr<ast::Expression> parseCallExpression(std::unique_ptr<ast::Expression> function);
+    std::vector<std::unique_ptr<ast::Expression>> parseCallArguments();
 };
 } // namespace parser

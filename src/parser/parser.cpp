@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
+#include "ast/CallExpression.h"
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
@@ -55,6 +56,9 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::GT,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
+    registerInfix(token::TokenType::LPAREN, [this](std::unique_ptr<ast::Expression> function) {
+        return parseCallExpression(std::move(function));
+    });
 }
 
 void Parser::nextToken() {
@@ -91,38 +95,31 @@ std::unique_ptr<ast::Statement> Parser::parseStatement() {
 std::unique_ptr<ast::LetStatement> Parser::parseLetStatement() {
     std::unique_ptr<ast::LetStatement> statement = std::make_unique<ast::LetStatement>();
     statement->token = currentToken_;
-
     if (!expectPeek(token::TokenType::IDENT)) {
         return nullptr;
     }
-
     statement->name = std::make_unique<ast::Identifier>();
     statement->name->token = currentToken_;
     statement->name->value = currentToken_.literal;
-
     if (!expectPeek(token::TokenType::ASSIGN)) {
         return nullptr;
     }
-
-    // TODO: this is not write but throwing it in for now
-    while (!curTokenIs(token::TokenType::SEMICOLON)) {
+    nextToken();
+    statement->value = parseExpression(Precedence::LOWEST);
+    if (peekTokenIs(token::TokenType::SEMICOLON)){
         nextToken();
     }
-
     return statement;
 }
 
 std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
     std::unique_ptr<ast::ReturnStatement> statement = std::make_unique<ast::ReturnStatement>();
     statement->token = currentToken_;
-
     nextToken();
-
-    // TODO: this is not write but throwing it in for now
-    while (!curTokenIs(token::TokenType::SEMICOLON)) {
+    statement->returnValue = parseExpression(Precedence::LOWEST);
+    if (peekTokenIs(token::TokenType::SEMICOLON)){
         nextToken();
     }
-
     return statement;
 }
 
@@ -336,10 +333,40 @@ std::vector<std::unique_ptr<ast::Identifier>> Parser::parseFunctionParameters() 
         identifier->value = currentToken_.literal;
         identifiers.push_back(std::move(identifier));
     }
-    if (!expectPeek(token::TokenType::RPAREN)){
+    if (!expectPeek(token::TokenType::RPAREN)) {
         // cant return null or nullptr; going to throw an exception;
         throw std::runtime_error("parseFunctionParameters didn't have a RPAREN in the correct spot");
     }
     return identifiers;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseCallExpression(std::unique_ptr<ast::Expression> function) {
+    std::unique_ptr<ast::CallExpression> expression = std::make_unique<ast::CallExpression>();
+    expression->token = currentToken_;
+    expression->function = std::move(function);
+    expression->arguments = parseCallArguments();
+    return expression;
+}
+
+std::vector<std::unique_ptr<ast::Expression>> Parser::parseCallArguments() {
+    std::vector<std::unique_ptr<ast::Expression>> args;
+    if (peekTokenIs(token::TokenType::RPAREN)) {
+        nextToken();
+        return args;
+    }
+    nextToken();
+    std::unique_ptr<ast::Expression> exp = parseExpression(Precedence::LOWEST);
+    args.push_back(std::move(exp));
+    while (peekTokenIs(token::TokenType::COMMA)) {
+        nextToken();
+        nextToken();
+        std::unique_ptr<ast::Expression> exp = parseExpression(Precedence::LOWEST);
+        args.push_back(std::move(exp));
+    }
+    if (!expectPeek(token::TokenType::RPAREN)){
+        // cant return null or nullptr; going to throw an exception;
+        throw std::runtime_error("parseCallArguments didn't have a RPAREN in the correct spot");
+    }
+    return args;
 }
 } // namespace parser
