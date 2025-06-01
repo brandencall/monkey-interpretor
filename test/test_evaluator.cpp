@@ -43,6 +43,26 @@ TEST(EvaluatorTest, EvalBooleanExpression) {
     }
 }
 
+TEST(EvaluatorTest, BangOperator) {
+    struct IntegerTest {
+        std::string input;
+        bool expected;
+    };
+    IntegerTest tests[6] = {
+        {"!true", false},
+        {"!false", true},
+        {"!5", false},
+        {"!!true", true},
+        {"!!false", false},
+        {"!!5", true},
+    };
+
+    for (IntegerTest test : tests) {
+        auto evaluated = testEval(test.input);
+        testBooleanObject(evaluated, test.expected);
+    }
+}
+
 object::Object* testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
