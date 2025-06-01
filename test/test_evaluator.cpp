@@ -29,7 +29,7 @@ std::unique_ptr<object::Object> testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
     std::unique_ptr<ast::Program> program = parser.parseProgram();
-    return evaluator::Eval(program.get());
+    return evaluator::eval(program.get());
 }
 
 void testIntegerObject(object::Object *obj, int expected) {

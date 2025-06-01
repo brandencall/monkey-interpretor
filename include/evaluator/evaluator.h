@@ -7,7 +7,7 @@
 #include <vector>
 namespace evaluator {
 
-std::unique_ptr<object::Object> Eval(ast::Node *node);
+std::unique_ptr<object::Object> eval(ast::Node *node);
 std::unique_ptr<object::Object> evalStatements(std::vector<std::unique_ptr<ast::Statement>> statements);
 
 }

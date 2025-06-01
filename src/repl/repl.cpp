@@ -1,4 +1,5 @@
 #include "repl.h"
+#include "evaluator/evaluator.h"
 #include "lexer.h"
 #include "parser.h"
 #include "token.h"
@@ -24,7 +25,10 @@ void REPL::start(std::ostream &out) {
             printParserErrors(out, *parser.errors());
             continue;
         }
-        out << program->toString() << '\n';
+        auto evaluated = evaluator::eval(program.get());
+        if (evaluated != nullptr) {
+            out << evaluated->inspect() << '\n';
+        }
     }
 }
 void REPL::printParserErrors(std::ostream &out, std::vector<std::string> errors) {

@@ -6,11 +6,11 @@
 
 namespace evaluator {
 
-std::unique_ptr<object::Object> Eval(ast::Node *node) {
+std::unique_ptr<object::Object> eval(ast::Node *node) {
     if (auto program = dynamic_cast<ast::Program *>(node)) {
         return evalStatements(std::move(program->statements));
     } else if(auto expression = dynamic_cast<ast::ExpressionStatement *>(node)){
-        return Eval(expression->expression.get());
+        return eval(expression->expression.get());
     } else if (auto intLiteral = dynamic_cast<ast::IntegerLiteral *>(node)) {
         std::unique_ptr<object::Integer> integerObj = std::make_unique<object::Integer>();
         integerObj->value = intLiteral->valueInt;
@@ -22,7 +22,7 @@ std::unique_ptr<object::Object> Eval(ast::Node *node) {
 std::unique_ptr<object::Object> evalStatements(std::vector<std::unique_ptr<ast::Statement>> statements) {
     std::unique_ptr<object::Object> result;
     for (auto const &statement : statements) {
-        result = Eval(statement.get());
+        result = eval(statement.get());
     }
     return result;
 }
