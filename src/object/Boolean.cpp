@@ -4,7 +4,14 @@
 
 namespace object {
 
-std::string Boolean::inspect() const { return std::to_string(value); }
+std::string Boolean::inspect() const { 
+    if (value){
+        return "true";
+    } else if (!value){
+        return "false";
+    }
+    return std::to_string(value); 
+}
 Object::ObjectType Boolean::type() const { return objectType; }
 
 } // namespace object

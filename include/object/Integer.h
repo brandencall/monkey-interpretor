@@ -8,6 +8,7 @@ class Integer : public Object {
     ObjectType objectType = "INTEGER";
     int value;
 
+    Integer(int value) : value(value) {};
     ObjectType type() const override;
     std::string inspect() const override;
 };

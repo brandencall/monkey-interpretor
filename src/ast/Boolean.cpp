@@ -1,4 +1,5 @@
 #include "ast/Boolean.h"
+#include "token.h"
 #include <string>
 
 namespace ast {

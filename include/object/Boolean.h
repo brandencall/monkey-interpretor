@@ -8,6 +8,7 @@ class Boolean : public Object {
     ObjectType objectType = "BOOLEAN";
     bool value;
 
+    Boolean(bool value) : value(value) {};
     ObjectType type() const override;
     std::string inspect() const override;
 };
