@@ -3,7 +3,7 @@
 #include <string>
 
 namespace object {
-class Null : Object {
+class Null : public Object {
   public:
     ObjectType objectType = "NULL";
 

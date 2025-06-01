@@ -3,7 +3,7 @@
 #include <string>
 
 namespace object {
-class Integer : Object {
+class Integer : public Object {
   public:
     ObjectType objectType = "INTEGER";
     int value;

@@ -3,7 +3,7 @@
 #include <string>
 
 namespace object {
-class Boolean : Object {
+class Boolean : public Object {
   public:
     ObjectType objectType = "BOOLEAN";
     bool value;
