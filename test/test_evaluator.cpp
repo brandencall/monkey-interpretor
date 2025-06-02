@@ -112,6 +112,23 @@ TEST(EvaluatorTest, IfElseExpressions) {
     }
 }
 
+TEST(EvaluatorTest, ReturnStatements){
+    struct ReturnTest{  
+        std::string input;
+        int expected;
+    };
+    ReturnTest tests[4] = {
+        {"return 10;", 10},
+        {"return 10; 9;", 10},
+        {"return 2 * 5; 9;", 10},
+        {"9; return 2 * 5; 9;", 10},
+    };
+    for (ReturnTest test : tests) {
+        auto evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expected);
+    }
+}
+
 object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));

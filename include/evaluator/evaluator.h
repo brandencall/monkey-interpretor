@@ -1,8 +1,10 @@
 #pragma once
 
+#include "ast/BlockStatement.h"
 #include "ast/Expression.h"
 #include "ast/IfExpression.h"
 #include "ast/Node.h"
+#include "ast/Program.h"
 #include "ast/Statement.h"
 #include "object/Boolean.h"
 #include "object/object.h"
@@ -11,7 +13,8 @@
 namespace evaluator {
 
 object::Object* eval(ast::Node *node);
-object::Object* evalStatements(std::vector<std::unique_ptr<ast::Statement>> statements);
+object::Object* evalProgram(ast::Program* program);
+object::Object* evalBlockStatement(ast::BlockStatement* block);
 object::Boolean* nativeBoolToBooleanObject(bool input);
 object::Object* evalPrefixExpression(std::string oper, object::Object* right);
 object::Object* evalInfixExpression(std::string oper, object::Object* left, object::Object* right);

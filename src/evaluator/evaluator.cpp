@@ -7,11 +7,12 @@
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
 #include "ast/Program.h"
+#include "ast/ReturnStatement.h"
 #include "object/Boolean.h"
 #include "object/Integer.h"
 #include "object/Null.h"
+#include "object/ReturnValue.h"
 #include "object/object.h"
-#include <iostream>
 #include <string>
 
 namespace evaluator {
@@ -23,7 +24,7 @@ object::Boolean FALSE{false};
 object::Object *eval(ast::Node *node) {
 
     if (auto program = dynamic_cast<ast::Program *>(node)) {
-        return evalStatements(std::move(program->statements));
+        return evalProgram(program);
     } else if (auto expression = dynamic_cast<ast::ExpressionStatement *>(node)) {
         return eval(expression->expression.get());
     } else if (auto intLiteral = dynamic_cast<ast::IntegerLiteral *>(node)) {
@@ -39,18 +40,35 @@ object::Object *eval(ast::Node *node) {
         auto right = eval(infixExpression->right.get());
         return evalInfixExpression(infixExpression->oper, left, right);
     } else if (auto blockStatement = dynamic_cast<ast::BlockStatement *>(node)) {
-        return evalStatements(std::move(blockStatement->statements));
+        return evalBlockStatement(blockStatement);
     } else if (auto ifExpression = dynamic_cast<ast::IfExpression *>(node)) {
         return evalIfExpression(ifExpression);
+    } else if (auto returnStatement = dynamic_cast<ast::ReturnStatement *>(node)) {
+        auto val = eval(returnStatement->returnValue.get());
+        return new object::ReturnValue(val);
     }
 
     return nullptr;
 }
 
-object::Object *evalStatements(std::vector<std::unique_ptr<ast::Statement>> statements) {
+object::Object *evalProgram(ast::Program *program) {
     object::Object *result;
-    for (auto const &statement : statements) {
+    for (auto const &statement : program->statements) {
         result = eval(statement.get());
+        if (auto returnValue = dynamic_cast<object::ReturnValue *>(result)){
+            return returnValue->value;
+        }
+    }
+    return result;
+}
+
+object::Object *evalBlockStatement(ast::BlockStatement *block) {
+    object::Object *result;
+    for (auto const &statement : block->statements) {
+        result = eval(statement.get());
+        if (result != nullptr && result->type() == object::ObjectType::RETURN_VALUE){
+            return result;
+        }
     }
     return result;
 }
@@ -140,13 +158,13 @@ object::Object *evalIfExpression(ast::IfExpression *ifExpression) {
 }
 
 bool isTruthy(object::Object *object) {
-    if (object == &NULL_OBJECT){
+    if (object == &NULL_OBJECT) {
         return false;
-    } else if (object == &TRUE){
+    } else if (object == &TRUE) {
         return true;
-    } else if (object == &FALSE){
+    } else if (object == &FALSE) {
         return false;
-    }else {
+    } else {
         return true;
     }
 }

@@ -3,7 +3,7 @@
 
 namespace object {
 
-enum class ObjectType { INTEGER_OBJ, BOOLEAN_OBJ, NULL_OBJ };
+enum class ObjectType { INTEGER_OBJ, BOOLEAN_OBJ, NULL_OBJ, RETURN_VALUE};
 
 class Object {
   public:
