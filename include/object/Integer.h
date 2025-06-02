@@ -11,6 +11,7 @@ class Integer : public Object {
     Integer(int value) : value(value) {};
     ObjectType type() const override;
     std::string inspect() const override;
+    std::string typeToString() const override;
 };
 
 } // namespace object

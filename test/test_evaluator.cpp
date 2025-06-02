@@ -1,6 +1,7 @@
 #include "evaluator/evaluator.h"
 #include "lexer.h"
 #include "object/Boolean.h"
+#include "object/Error.h"
 #include "object/Integer.h"
 #include "object/object.h"
 #include "parser.h"
@@ -112,8 +113,8 @@ TEST(EvaluatorTest, IfElseExpressions) {
     }
 }
 
-TEST(EvaluatorTest, ReturnStatements){
-    struct ReturnTest{  
+TEST(EvaluatorTest, ReturnStatements) {
+    struct ReturnTest {
         std::string input;
         int expected;
     };
@@ -129,6 +130,58 @@ TEST(EvaluatorTest, ReturnStatements){
     }
 }
 
+TEST(EvaluatorTest, ErrorHandling) {
+    struct ErrTest {
+        std::string input;
+        std::string expectedMessage;
+    };
+    ErrTest tests[7] = {
+        {
+            "5 + true;",
+            "type mismatch: INTEGER + BOOLEAN",
+        },
+        {
+            "5 + true; 5;",
+            "type mismatch: INTEGER + BOOLEAN",
+        },
+        {
+            "-true",
+            "unknown operator: -BOOLEAN",
+        },
+        {
+            "true + false;",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            "5; true + false; 5",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            "if (10 > 1) { true + false; }",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            R"(
+                if (10 > 1) {
+                    if (10 > 1) {
+                        return true + false;
+                    }
+                    return 1;
+                }
+            )",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+
+    };
+    for (ErrTest test : tests) {
+        auto evaluated = testEval(test.input);
+        auto *errObj = dynamic_cast<object::Error *>(evaluated);
+        EXPECT_NE(errObj, nullptr) << "object is not an Error. got=" << evaluated << '\n';
+        EXPECT_EQ(errObj->message, test.expectedMessage)
+            << "wrong error message. expected=" << test.expectedMessage << ", got=" << errObj->message << '\n';
+    }
+}
+
 object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
@@ -138,7 +191,7 @@ object::Object *testEval(std::string input) {
 
 void testIntegerObject(object::Object *obj, int expected) {
     auto *result = dynamic_cast<object::Integer *>(obj);
-    EXPECT_NE(result, nullptr) << "object is not an Integer. got=" << result << '\n';
+    EXPECT_NE(result, nullptr) << "object is not an Integer. got=" << obj << '\n';
     EXPECT_EQ(result->value, expected) << "object has wrong value. got=" << std::to_string(result->value)
                                        << " wanted=" << expected << '\n';
 }
@@ -150,10 +203,6 @@ void testBooleanObject(object::Object *obj, bool expected) {
                                        << " wanted=" << expected << '\n';
 }
 
-void testNullObject(object::Object *obj) { EXPECT_EQ(obj->type(), object::ObjectType::NULL_OBJ) << "object is not nullptr." << '\n'; }
-
-
-
-
-
-
+void testNullObject(object::Object *obj) {
+    EXPECT_EQ(obj->type(), object::ObjectType::NULL_OBJ) << "object is not nullptr." << '\n';
+}

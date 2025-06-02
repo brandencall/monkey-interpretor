@@ -7,8 +7,10 @@
 #include "ast/Program.h"
 #include "ast/Statement.h"
 #include "object/Boolean.h"
+#include "object/Error.h"
 #include "object/object.h"
 #include <memory>
+#include <string>
 #include <vector>
 namespace evaluator {
 
@@ -23,5 +25,7 @@ object::Object* evalMinusOperatorExpression(object::Object* right);
 object::Object* evalIntegerInfixExpression(std::string oper, object::Object* left, object::Object* right);
 object::Object* evalIfExpression(ast::IfExpression* ifExpression);
 bool isTruthy(object::Object* object);
+template <typename... Args> object::Error *newError(const std::string &format, Args &&...args);
+bool isError(object::Object* object);
 
 }

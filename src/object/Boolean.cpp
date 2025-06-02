@@ -14,4 +14,6 @@ std::string Boolean::inspect() const {
 }
 ObjectType Boolean::type() const { return objectType; }
 
+std::string Boolean::typeToString() const { return "BOOLEAN"; }
+
 } // namespace object

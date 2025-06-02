@@ -6,5 +6,6 @@ namespace object {
 
 std::string Integer::inspect() const { return std::to_string(value); }
 ObjectType Integer::type() const { return objectType; }
+std::string Integer::typeToString() const { return "INTEGER"; }
 
 } // namespace object

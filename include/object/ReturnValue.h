@@ -11,5 +11,6 @@ class ReturnValue : public Object {
     ReturnValue(object::Object *value) : value(value) {};
     ObjectType type() const override;
     std::string inspect() const override;
+    std::string typeToString() const override;
 };
 } // namespace object

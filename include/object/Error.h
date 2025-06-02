@@ -3,15 +3,14 @@
 #include <string>
 
 namespace object {
-class Boolean : public Object {
+class Error : public Object {
   public:
-    ObjectType objectType = ObjectType::BOOLEAN_OBJ;
-    bool value;
+    ObjectType objectType = ObjectType::ERROR_OBJ;
+    std::string message;
 
-    Boolean(bool value) : value(value) {};
+    Error(std::string message) : message(message) {};
     ObjectType type() const override;
     std::string inspect() const override;
     std::string typeToString() const override;
 };
-
 } // namespace object
