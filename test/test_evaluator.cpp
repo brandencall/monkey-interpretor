@@ -45,11 +45,27 @@ TEST(EvaluatorTest, EvalBooleanExpression) {
         std::string input;
         bool expected;
     };
-    IntegerTest tests[2] = {
+    IntegerTest tests[19] = {
         {"true", true},
         {"false", false},
+        {"1 < 2", true},
+        {"1 > 2", false},
+        {"1 < 1", false},
+        {"1 > 1", false},
+        {"1 == 1", true},
+        {"1 != 1", false},
+        {"1 == 2", false},
+        {"1 != 2", true},
+        {"true == true", true},
+        {"false == false", true},
+        {"true == false", false},
+        {"true != false", true},
+        {"false != true", true},
+        {"(1 < 2) == true", true},
+        {"(1 < 2) == false", false},
+        {"(1 > 2) == true", false},
+        {"(1 > 2) == false", true},
     };
-
     for (IntegerTest test : tests) {
         auto evaluated = testEval(test.input);
         testBooleanObject(evaluated, test.expected);

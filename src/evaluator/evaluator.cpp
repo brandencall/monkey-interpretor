@@ -68,6 +68,10 @@ object::Object *evalPrefixExpression(std::string oper, object::Object *right) {
 object::Object *evalInfixExpression(std::string oper, object::Object *left, object::Object *right) {
     if (left->type() == object::ObjectType::INTEGER_OBJ && right->type() == object::ObjectType::INTEGER_OBJ) {
         return evalIntegerInfixExpression(oper, left, right);
+    } else if (oper == "==") {
+        return nativeBoolToBooleanObject(left == right);
+    } else if (oper == "!=") {
+        return nativeBoolToBooleanObject(left != right);
     } else {
         return nullptr;
     }
@@ -104,6 +108,14 @@ object::Object *evalIntegerInfixExpression(std::string oper, object::Object *lef
         return new object::Integer(leftObj->value * rightObj->value);
     } else if (oper == "/") {
         return new object::Integer(leftObj->value / rightObj->value);
+    } else if (oper == "<") {
+        return nativeBoolToBooleanObject(leftObj->value < rightObj->value);
+    } else if (oper == ">") {
+        return nativeBoolToBooleanObject(leftObj->value > rightObj->value);
+    } else if (oper == "==") {
+        return nativeBoolToBooleanObject(leftObj->value == rightObj->value);
+    } else if (oper == "!=") {
+        return nativeBoolToBooleanObject(leftObj->value != rightObj->value);
     } else {
         return nullptr;
     }
