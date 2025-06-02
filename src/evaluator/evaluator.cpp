@@ -1,6 +1,7 @@
 #include "evaluator/evaluator.h"
 #include "ast/Boolean.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
 #include "ast/Program.h"
@@ -31,6 +32,10 @@ object::Object *eval(ast::Node *node) {
     } else if (auto prefixExpression = dynamic_cast<ast::PrefixExpression *>(node)) {
         auto right = eval(prefixExpression->right.get());
         return evalPrefixExpression(prefixExpression->oper, right);
+    } else if (auto infixExpression = dynamic_cast<ast::InfixExpression *>(node)) {
+        auto left = eval(infixExpression->left.get());
+        auto right = eval(infixExpression->right.get());
+        return evalInfixExpression(infixExpression->oper, left, right);
     }
     return nullptr;
 }
@@ -60,6 +65,14 @@ object::Object *evalPrefixExpression(std::string oper, object::Object *right) {
     }
 }
 
+object::Object *evalInfixExpression(std::string oper, object::Object *left, object::Object *right) {
+    if (left->type() == object::ObjectType::INTEGER_OBJ && right->type() == object::ObjectType::INTEGER_OBJ) {
+        return evalIntegerInfixExpression(oper, left, right);
+    } else {
+        return nullptr;
+    }
+}
+
 object::Object *evalBangOperatorExpression(object::Object *right) {
     if (right == &TRUE) {
         return &FALSE;
@@ -73,11 +86,26 @@ object::Object *evalBangOperatorExpression(object::Object *right) {
 }
 
 object::Object *evalMinusOperatorExpression(object::Object *right) {
-
     if (right->type() != object::ObjectType::INTEGER_OBJ) {
         return nullptr;
     }
-    auto intObj = dynamic_cast<object::Integer*>(right);
+    auto intObj = dynamic_cast<object::Integer *>(right);
     return new object::Integer(-intObj->value);
+}
+
+object::Object *evalIntegerInfixExpression(std::string oper, object::Object *left, object::Object *right) {
+    auto leftObj = dynamic_cast<object::Integer *>(left);
+    auto rightObj = dynamic_cast<object::Integer *>(right);
+    if (oper == "+") {
+        return new object::Integer(leftObj->value + rightObj->value);
+    } else if (oper == "-") {
+        return new object::Integer(leftObj->value - rightObj->value);
+    } else if (oper == "*") {
+        return new object::Integer(leftObj->value * rightObj->value);
+    } else if (oper == "/") {
+        return new object::Integer(leftObj->value / rightObj->value);
+    } else {
+        return nullptr;
+    }
 }
 } // namespace evaluator
