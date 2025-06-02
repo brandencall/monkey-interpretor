@@ -5,12 +5,13 @@
 #include "object/object.h"
 #include "parser.h"
 #include <gtest/gtest.h>
-#include <iostream>
+#include <optional>
 #include <string>
 
 object::Object *testEval(std::string input);
 void testIntegerObject(object::Object *obj, int expected);
 void testBooleanObject(object::Object *obj, bool expected);
+void testNullObject(object::Object *obj);
 
 TEST(EvaluatorTest, EvalIntegerExpression) {
     struct IntegerTest {
@@ -87,6 +88,30 @@ TEST(EvaluatorTest, BangOperator) {
     }
 }
 
+TEST(EvaluatorTest, IfElseExpressions) {
+    struct IfElseTest {
+        std::string input;
+        std::optional<int> expected;
+    };
+    IfElseTest tests[7] = {
+        {"if (true) { 10 }", 10},
+        {"if (false) { 10 }", std::nullopt},
+        {"if (1) { 10 }", 10},
+        {"if (1 < 2) { 10 }", 10},
+        {"if (1 > 2) { 10 }", std::nullopt},
+        {"if (1 > 2) { 10 } else { 20 }", 20},
+        {"if (1 < 2) { 10 } else { 20 }", 10},
+    };
+    for (IfElseTest test : tests) {
+        auto evaluated = testEval(test.input);
+        if (test.expected.has_value()) {
+            testIntegerObject(evaluated, test.expected.value());
+        } else {
+            testNullObject(evaluated);
+        }
+    }
+}
+
 object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
@@ -107,3 +132,11 @@ void testBooleanObject(object::Object *obj, bool expected) {
     EXPECT_EQ(result->value, expected) << "object has wrong value. got=" << std::to_string(result->value)
                                        << " wanted=" << expected << '\n';
 }
+
+void testNullObject(object::Object *obj) { EXPECT_EQ(obj->type(), object::ObjectType::NULL_OBJ) << "object is not nullptr." << '\n'; }
+
+
+
+
+
+

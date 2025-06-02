@@ -1,6 +1,8 @@
 #include "evaluator/evaluator.h"
+#include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
@@ -36,7 +38,12 @@ object::Object *eval(ast::Node *node) {
         auto left = eval(infixExpression->left.get());
         auto right = eval(infixExpression->right.get());
         return evalInfixExpression(infixExpression->oper, left, right);
+    } else if (auto blockStatement = dynamic_cast<ast::BlockStatement *>(node)) {
+        return evalStatements(std::move(blockStatement->statements));
+    } else if (auto ifExpression = dynamic_cast<ast::IfExpression *>(node)) {
+        return evalIfExpression(ifExpression);
     }
+
     return nullptr;
 }
 
@@ -120,4 +127,28 @@ object::Object *evalIntegerInfixExpression(std::string oper, object::Object *lef
         return nullptr;
     }
 }
+
+object::Object *evalIfExpression(ast::IfExpression *ifExpression) {
+    object::Object *condition = eval(ifExpression->condition.get());
+    if (isTruthy(condition)) {
+        return eval(ifExpression->consiquence.get());
+    } else if (ifExpression->alternative != nullptr) {
+        return eval(ifExpression->alternative.get());
+    } else {
+        return &NULL_OBJECT;
+    }
+}
+
+bool isTruthy(object::Object *object) {
+    if (object == &NULL_OBJECT){
+        return false;
+    } else if (object == &TRUE){
+        return true;
+    } else if (object == &FALSE){
+        return false;
+    }else {
+        return true;
+    }
+}
+
 } // namespace evaluator
