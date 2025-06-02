@@ -5,7 +5,7 @@
 namespace object {
 class Integer : public Object {
   public:
-    ObjectType objectType = "INTEGER";
+    ObjectType objectType = ObjectType::INTEGER_OBJ;
     int value;
 
     Integer(int value) : value(value) {};

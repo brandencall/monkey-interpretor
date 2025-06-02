@@ -5,7 +5,7 @@
 namespace object {
 class Null : public Object {
   public:
-    ObjectType objectType = "NULL";
+    ObjectType objectType = ObjectType::NULL_OBJ;
 
     ObjectType type() const override;
     std::string inspect() const override;

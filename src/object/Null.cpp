@@ -5,6 +5,6 @@
 namespace object {
 
 std::string Null::inspect() const { return "null"; }
-Object::ObjectType Null::type() const { return objectType; }
+ObjectType Null::type() const { return objectType; }
 
 } // namespace object

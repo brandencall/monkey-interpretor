@@ -5,7 +5,7 @@
 namespace object {
 class Boolean : public Object {
   public:
-    ObjectType objectType = "BOOLEAN";
+    ObjectType objectType = ObjectType::BOOLEAN_OBJ;
     bool value;
 
     Boolean(bool value) : value(value) {};

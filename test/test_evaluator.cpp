@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-object::Object* testEval(std::string input);
+object::Object *testEval(std::string input);
 void testIntegerObject(object::Object *obj, int expected);
 void testBooleanObject(object::Object *obj, bool expected);
 
@@ -16,11 +16,12 @@ TEST(EvaluatorTest, EvalIntegerExpression) {
         std::string input;
         int expected;
     };
-    IntegerTest tests[2] = {
+    IntegerTest tests[4] = {
         {"5", 5},
         {"10", 10},
+        {"-5", -5},
+        {"-10", -10},
     };
-
     for (IntegerTest test : tests) {
         auto evaluated = testEval(test.input);
         testIntegerObject(evaluated, test.expected);
@@ -49,12 +50,7 @@ TEST(EvaluatorTest, BangOperator) {
         bool expected;
     };
     IntegerTest tests[6] = {
-        {"!true", false},
-        {"!false", true},
-        {"!5", false},
-        {"!!true", true},
-        {"!!false", false},
-        {"!!5", true},
+        {"!true", false}, {"!false", true}, {"!5", false}, {"!!true", true}, {"!!false", false}, {"!!5", true},
     };
 
     for (IntegerTest test : tests) {
@@ -63,7 +59,7 @@ TEST(EvaluatorTest, BangOperator) {
     }
 }
 
-object::Object* testEval(std::string input) {
+object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
     std::unique_ptr<ast::Program> program = parser.parseProgram();

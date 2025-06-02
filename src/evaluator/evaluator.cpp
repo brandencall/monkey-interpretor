@@ -8,6 +8,8 @@
 #include "object/Integer.h"
 #include "object/Null.h"
 #include "object/object.h"
+#include <iostream>
+#include <string>
 
 namespace evaluator {
 
@@ -51,20 +53,31 @@ object::Boolean *nativeBoolToBooleanObject(bool input) {
 object::Object *evalPrefixExpression(std::string oper, object::Object *right) {
     if (oper == "!") {
         return evalBangOperatorExpression(right);
+    } else if (oper == "-") {
+        return evalMinusOperatorExpression(right);
     } else {
         return &NULL_OBJECT;
     }
 }
 
 object::Object *evalBangOperatorExpression(object::Object *right) {
-    if (right == &TRUE){
+    if (right == &TRUE) {
         return &FALSE;
-    } else if(right == &FALSE) {
-       return &TRUE; 
+    } else if (right == &FALSE) {
+        return &TRUE;
     } else if (right == &NULL_OBJECT) {
         return &TRUE;
     } else {
         return &FALSE;
     }
+}
+
+object::Object *evalMinusOperatorExpression(object::Object *right) {
+
+    if (right->type() != object::ObjectType::INTEGER_OBJ) {
+        return nullptr;
+    }
+    auto intObj = dynamic_cast<object::Integer*>(right);
+    return new object::Integer(-intObj->value);
 }
 } // namespace evaluator
