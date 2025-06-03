@@ -10,6 +10,8 @@
 namespace repl {
 void REPL::start(std::ostream &out) {
     std::string line;
+    object::Environment *env = new object::Environment();
+
     while (true) {
         out << PROMPT;
         out.flush();
@@ -25,7 +27,7 @@ void REPL::start(std::ostream &out) {
             printParserErrors(out, *parser.errors());
             continue;
         }
-        auto evaluated = evaluator::eval(program.get());
+        auto evaluated = evaluator::eval(program.get(), env);
         if (evaluated != nullptr) {
             out << evaluated->inspect() << '\n';
         }

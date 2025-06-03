@@ -1,6 +1,7 @@
 #include "evaluator/evaluator.h"
 #include "lexer.h"
 #include "object/Boolean.h"
+#include "object/Environment.h"
 #include "object/Error.h"
 #include "object/Integer.h"
 #include "object/object.h"
@@ -135,7 +136,7 @@ TEST(EvaluatorTest, ErrorHandling) {
         std::string input;
         std::string expectedMessage;
     };
-    ErrTest tests[7] = {
+    ErrTest tests[8] = {
         {
             "5 + true;",
             "type mismatch: INTEGER + BOOLEAN",
@@ -171,7 +172,10 @@ TEST(EvaluatorTest, ErrorHandling) {
             )",
             "unknown operator: BOOLEAN + BOOLEAN",
         },
-
+        {
+            "foobar",
+            "identifier not found: foobar",
+        },
     };
     for (ErrTest test : tests) {
         auto evaluated = testEval(test.input);
@@ -182,11 +186,29 @@ TEST(EvaluatorTest, ErrorHandling) {
     }
 }
 
+TEST(EvaluatorTest, LetStatement) {
+    struct LetTest {
+        std::string input;
+        int expected;
+    };
+    LetTest tests[4] = {
+        {"let a = 5; a;", 5},
+        {"let a = 5 * 5; a;", 25},
+        {"let a = 5; let b = a; b;", 5},
+        {"let a = 5; let b = a; let c = a + b + 5; c;", 15}
+    };
+    for (LetTest test : tests) {
+        auto evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expected);
+    }
+}
+
 object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
     std::unique_ptr<ast::Program> program = parser.parseProgram();
-    return evaluator::eval(program.get());
+    object::Environment* env = new object::Environment();
+    return evaluator::eval(program.get(), env);
 }
 
 void testIntegerObject(object::Object *obj, int expected) {

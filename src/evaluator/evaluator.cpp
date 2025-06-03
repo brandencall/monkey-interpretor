@@ -5,15 +5,18 @@
 #include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
+#include "ast/LetStatement.h"
 #include "ast/PrefixExpression.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "object/Boolean.h"
+#include "object/Environment.h"
 #include "object/Integer.h"
 #include "object/Null.h"
 #include "object/ReturnValue.h"
 #include "object/object.h"
 #include <format>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -24,52 +27,62 @@ object::Null NULL_OBJECT{};
 object::Boolean TRUE{true};
 object::Boolean FALSE{false};
 
-object::Object *eval(ast::Node *node) {
+object::Object *eval(ast::Node *node, object::Environment *env) {
 
     if (auto program = dynamic_cast<ast::Program *>(node)) {
-        return evalProgram(program);
+        return evalProgram(program, env);
     } else if (auto expression = dynamic_cast<ast::ExpressionStatement *>(node)) {
-        return eval(expression->expression.get());
+        return eval(expression->expression.get(), env);
     } else if (auto intLiteral = dynamic_cast<ast::IntegerLiteral *>(node)) {
         object::Integer *integerObj = new object::Integer(intLiteral->valueInt);
         return integerObj;
     } else if (auto boolLiteral = dynamic_cast<ast::Boolean *>(node)) {
         return nativeBoolToBooleanObject(boolLiteral->valueBool);
     } else if (auto prefixExpression = dynamic_cast<ast::PrefixExpression *>(node)) {
-        auto right = eval(prefixExpression->right.get());
+        auto right = eval(prefixExpression->right.get(), env);
         if (isError(right)) {
             return right;
         }
         return evalPrefixExpression(prefixExpression->oper, right);
     } else if (auto infixExpression = dynamic_cast<ast::InfixExpression *>(node)) {
-        auto left = eval(infixExpression->left.get());
+        auto left = eval(infixExpression->left.get(), env);
         if (isError(left)) {
             return left;
         }
-        auto right = eval(infixExpression->right.get());
+        auto right = eval(infixExpression->right.get(), env);
         if (isError(right)) {
             return right;
         }
         return evalInfixExpression(infixExpression->oper, left, right);
     } else if (auto blockStatement = dynamic_cast<ast::BlockStatement *>(node)) {
-        return evalBlockStatement(blockStatement);
+        return evalBlockStatement(blockStatement, env);
     } else if (auto ifExpression = dynamic_cast<ast::IfExpression *>(node)) {
-        return evalIfExpression(ifExpression);
+        return evalIfExpression(ifExpression, env);
     } else if (auto returnStatement = dynamic_cast<ast::ReturnStatement *>(node)) {
-        auto val = eval(returnStatement->returnValue.get());
+        auto val = eval(returnStatement->returnValue.get(), env);
         if (isError(val)) {
             return val;
         }
         return new object::ReturnValue(val);
-    }
+    } else if (auto letStatement = dynamic_cast<ast::LetStatement *>(node)) {
+        auto val = eval(letStatement->value.get(), env);
+        if (isError(val)) {
+            return val;
+        }
+        std::unique_ptr<object::Object> saveObject(val);
+        env->set(letStatement->name->value, std::move(saveObject));
+    } else if (auto ident = dynamic_cast<ast::Identifier *>(node)) {
+        return evalIdentifier(ident, env);
+    } 
+
 
     return nullptr;
 }
 
-object::Object *evalProgram(ast::Program *program) {
+object::Object *evalProgram(ast::Program *program, object::Environment *env) {
     object::Object *result;
     for (auto const &statement : program->statements) {
-        result = eval(statement.get());
+        result = eval(statement.get(), env);
         if (auto returnValue = dynamic_cast<object::ReturnValue *>(result)) {
             return returnValue->value;
         } else if (auto err = dynamic_cast<object::Error *>(result)) {
@@ -79,10 +92,10 @@ object::Object *evalProgram(ast::Program *program) {
     return result;
 }
 
-object::Object *evalBlockStatement(ast::BlockStatement *block) {
+object::Object *evalBlockStatement(ast::BlockStatement *block, object::Environment *env) {
     object::Object *result;
     for (auto const &statement : block->statements) {
-        result = eval(statement.get());
+        result = eval(statement.get(), env);
         if (result != nullptr) {
             if (result->type() == object::ObjectType::ERROR_OBJ || result->type() == object::ObjectType::RETURN_VALUE) {
                 return result;
@@ -167,18 +180,26 @@ object::Object *evalIntegerInfixExpression(std::string oper, object::Object *lef
     }
 }
 
-object::Object *evalIfExpression(ast::IfExpression *ifExpression) {
-    object::Object *condition = eval(ifExpression->condition.get());
+object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Environment *env) {
+    object::Object *condition = eval(ifExpression->condition.get(), env);
     if (isError(condition)){
         return condition;
     }
     if (isTruthy(condition)) {
-        return eval(ifExpression->consiquence.get());
+        return eval(ifExpression->consiquence.get(), env);
     } else if (ifExpression->alternative != nullptr) {
-        return eval(ifExpression->alternative.get());
+        return eval(ifExpression->alternative.get(), env);
     } else {
         return &NULL_OBJECT;
     }
+}
+
+object::Object* evalIdentifier(ast::Identifier* ident, object::Environment *env) {
+    auto val = env->get(ident->value);
+    if (val == nullptr) {
+        return newError("identifier not found: ", ident->value);
+    }
+    return val;
 }
 
 bool isTruthy(object::Object *object) {
