@@ -7,11 +7,15 @@ namespace object {
 
 Object *Environment::get(std::string &name) {
     auto item = store.find(name);
-    if (item != store.end()) {
-        return item->second.get();
+    Object *result;
+    if (item == store.end() && outer != nullptr) {
+        result = outer->get(name);
+    } else if (item == store.end()) {
+        result = nullptr;
     } else {
-        return nullptr;
+        result = item->second.get();
     }
+    return result;
 }
 
 Object *Environment::set(std::string name, std::unique_ptr<Object> value) {

@@ -3,6 +3,7 @@
 #include "object/Boolean.h"
 #include "object/Environment.h"
 #include "object/Error.h"
+#include "object/Function.h"
 #include "object/Integer.h"
 #include "object/object.h"
 #include "parser.h"
@@ -191,13 +192,44 @@ TEST(EvaluatorTest, LetStatement) {
         std::string input;
         int expected;
     };
-    LetTest tests[4] = {
-        {"let a = 5; a;", 5},
-        {"let a = 5 * 5; a;", 25},
-        {"let a = 5; let b = a; b;", 5},
-        {"let a = 5; let b = a; let c = a + b + 5; c;", 15}
-    };
+    LetTest tests[4] = {{"let a = 5; a;", 5},
+                        {"let a = 5 * 5; a;", 25},
+                        {"let a = 5; let b = a; b;", 5},
+                        {"let a = 5; let b = a; let c = a + b + 5; c;", 15}};
     for (LetTest test : tests) {
+        auto evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expected);
+    }
+}
+
+TEST(EvaluatorTest, FunctionObject) {
+    std::string input = "fn(x) { x + 2; };";
+    auto evaluated = testEval(input);
+    auto *func = dynamic_cast<object::Function *>(evaluated);
+    EXPECT_NE(func, nullptr) << "function is not a Function. got=" << func << '\n';
+    EXPECT_EQ(func->parameters.size(), 1)
+        << "function parameters are no the right size. got=" << func->parameters.size() << " expected=1" << '\n';
+    EXPECT_EQ(func->parameters[0]->toString(), "x")
+        << "param is not x. got=" << func->parameters[0]->toString() << '\n';
+    std::string expectedBody = "(x + 2)";
+    EXPECT_EQ(func->body->toString(), expectedBody)
+        << "body is not " << expectedBody << ", got=" << func->body->toString() << '\n';
+}
+
+TEST(EvaluatorTest, FunctionApplication) {
+    struct FuncTest {
+        std::string input;
+        int expected;
+    };
+    FuncTest tests[6] = {
+        {"let identity = fn(x) { x; }; identity(5);", 5},
+        {"let identity = fn(x) { return x; }; identity(5);", 5},
+        {"let double = fn(x) { x * 2; }; double(5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+        {"fn(x) { x; }(5)", 5},
+    };
+    for (FuncTest test : tests) {
         auto evaluated = testEval(test.input);
         testIntegerObject(evaluated, test.expected);
     }
@@ -207,7 +239,7 @@ object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
     parser::Parser parser = parser::Parser(std::move(lexer));
     std::unique_ptr<ast::Program> program = parser.parseProgram();
-    object::Environment* env = new object::Environment();
+    object::Environment *env = new object::Environment();
     return evaluator::eval(program.get(), env);
 }
 

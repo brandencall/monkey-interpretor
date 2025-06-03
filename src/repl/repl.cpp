@@ -2,7 +2,6 @@
 #include "evaluator/evaluator.h"
 #include "lexer.h"
 #include "parser.h"
-#include "token.h"
 #include <iostream>
 #include <string>
 #include <vector>

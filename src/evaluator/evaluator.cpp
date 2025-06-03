@@ -1,7 +1,9 @@
 #include "evaluator/evaluator.h"
 #include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
+#include "ast/CallExpression.h"
 #include "ast/ExpressionStatement.h"
+#include "ast/FunctionLiteral.h"
 #include "ast/IfExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
@@ -11,15 +13,18 @@
 #include "ast/ReturnStatement.h"
 #include "object/Boolean.h"
 #include "object/Environment.h"
+#include "object/Function.h"
 #include "object/Integer.h"
 #include "object/Null.h"
 #include "object/ReturnValue.h"
 #include "object/object.h"
-#include <format>
+#include <cstddef>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace evaluator {
 
@@ -73,8 +78,28 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
         env->set(letStatement->name->value, std::move(saveObject));
     } else if (auto ident = dynamic_cast<ast::Identifier *>(node)) {
         return evalIdentifier(ident, env);
-    } 
-
+    } else if (auto funcLit = dynamic_cast<ast::FunctionLiteral *>(node)) {
+        object::Function *func = new object::Function();
+        func->parameters = std::move(funcLit->parameters);
+        func->body = std::move(funcLit->body);
+        func->env = env;
+        return func;
+    } else if (auto call = dynamic_cast<ast::CallExpression *>(node)) {
+        auto func = eval(call->function.get(), env);
+        if (isError(func)) {
+            return func;
+        }
+        std::vector<ast::Expression *> args;
+        args.reserve(call->arguments.size());
+        for (const auto &arg : call->arguments) {
+            args.push_back(arg.get());
+        }
+        std::vector<object::Object *> evaluatedArgs = evalExpression(args, env);
+        if (evaluatedArgs.size() == 1 && isError(evaluatedArgs[0])) {
+            return evaluatedArgs[0];
+        }
+        return applyFunction(func, evaluatedArgs);
+    }
 
     return nullptr;
 }
@@ -182,7 +207,7 @@ object::Object *evalIntegerInfixExpression(std::string oper, object::Object *lef
 
 object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Environment *env) {
     object::Object *condition = eval(ifExpression->condition.get(), env);
-    if (isError(condition)){
+    if (isError(condition)) {
         return condition;
     }
     if (isTruthy(condition)) {
@@ -194,12 +219,43 @@ object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Enviro
     }
 }
 
-object::Object* evalIdentifier(ast::Identifier* ident, object::Environment *env) {
+object::Object *evalIdentifier(ast::Identifier *ident, object::Environment *env) {
     auto val = env->get(ident->value);
     if (val == nullptr) {
         return newError("identifier not found: ", ident->value);
     }
     return val;
+}
+
+std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps, object::Environment *env) {
+    std::vector<object::Object *> result;
+    for (const auto &exp : exps) {
+        object::Object *evaluated = eval(exp, env);
+        if (isError(evaluated)) {
+            return std::vector<object::Object *>{evaluated};
+        }
+        result.push_back(evaluated);
+    }
+    return result;
+}
+
+object::Object *applyFunction(object::Object *func, std::vector<object::Object *> args) {
+    auto funcObj = dynamic_cast<object::Function *>(func);
+    if (funcObj == nullptr) {
+        return newError("not a function: ", func->typeToString());
+    } 
+    object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args); 
+    object::Object *evaluated = eval(funcObj->body.get(), extendedEnv);
+    return unwrapReturnValue(evaluated);
+}
+
+object::Environment *extendFunctionEnvironment(object::Function *func, std::vector<object::Object *> args) {
+    object::Environment *env = new object::Environment(func->env);
+    for (size_t i = 0; i < func->parameters.size(); i++) {
+        std::unique_ptr<object::Object> saveArg(args[i]);
+        env->set(func->parameters[i]->value, std::move(saveArg));
+    }
+    return env;
 }
 
 bool isTruthy(object::Object *object) {
@@ -225,10 +281,24 @@ template <typename... Args> object::Error *newError(const std::string &format, A
     return new object::Error(msg);
 }
 
-bool isError(object::Object* object){
-    if (object != nullptr){
+bool isError(object::Object *object) {
+    if (object != nullptr) {
         return object->type() == object::ObjectType::ERROR_OBJ;
     }
     return false;
 }
+
+object::Object *unwrapReturnValue(object::Object *obj){
+
+    auto returnValue = dynamic_cast<object::ReturnValue *>(obj);
+    if (returnValue != nullptr) {
+        return returnValue->value;
+    }
+    return obj;
+}
+
+
+
+
+
 } // namespace evaluator
