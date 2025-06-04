@@ -65,6 +65,12 @@ std::string tokenTypeToString(TokenType type) {
         return "ELSE";
     case TokenType::RETURN:
         return "RETURN";
+    case TokenType::STRING:
+        return "STRING";
+    case TokenType::LBRACKET:
+        return "LBRACKET";
+    case TokenType::RBRACKET:
+        return "RBRACKET";
     default:
         return "UNKNOWN";
     }

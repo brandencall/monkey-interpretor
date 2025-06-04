@@ -38,6 +38,9 @@ enum class TokenType {
     RETURN,
 
     STRING,
+
+    LBRACKET,
+    RBRACKET,
 };
 
 struct Token {

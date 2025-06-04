@@ -85,6 +85,12 @@ token::Token Lexer::nextToken() {
     case '}':
         token = newToken(token::TokenType::RBRACE, ch_);
         break;
+    case '[':
+        token = newToken(token::TokenType::LBRACKET, ch_);
+        break;
+    case ']':
+        token = newToken(token::TokenType::RBRACKET, ch_);
+        break;
     case '"':
         token.type = token::TokenType::STRING;
         token.literal = readString();
