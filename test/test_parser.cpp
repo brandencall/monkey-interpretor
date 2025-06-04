@@ -6,6 +6,7 @@
 #include "ast/FunctionLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
+#include "ast/IndexExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
@@ -294,7 +295,7 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         std::string input;
         std::string expected;
     };
-    TestStruct tests[25] = {
+    TestStruct tests[27] = {
         {
             "true",
             "true\n",
@@ -394,6 +395,14 @@ TEST(ParserTest, OperatorPrecedenceParsing) {
         {
             "add(a + b + c * d / f + g)",
             "add((((a + b) + ((c * d) / f)) + g))\n",
+        },
+        {
+            "a * [1, 2, 3, 4][b * c] * d",
+            "((a * ([1, 2, 3, 4][(b * c)])) * d)\n",
+        },
+        {
+            "add(a * b[2], b[1], 2 * [1, 2][1])",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))\n",
         },
     };
 
@@ -623,8 +632,26 @@ TEST(ParserTest, ParsingArrayLiterals) {
 
     EXPECT_EQ(arrayLit->elements.size(), 3) << "arrayLit size is not 3. got=" << arrayLit->elements.size() << '\n';
     testIntegerLiteral(arrayLit->elements[0].get(), 1);
-    testInfixExpression(arrayLit->elements[1].get(), 2 , "*", 2);
-    testInfixExpression(arrayLit->elements[2].get(), 3 , "+", 3);
+    testInfixExpression(arrayLit->elements[1].get(), 2, "*", 2);
+    testInfixExpression(arrayLit->elements[2].get(), 3, "+", 3);
+}
+
+TEST(ParserTest, ParsingIndexExpressions) {
+    std::string input = "myArray[1 + 1]";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *indexExp = dynamic_cast<ast::IndexExpression *>(expressionStatement->expression.get());
+    ASSERT_NE(indexExp, nullptr) << "the statement[0] is not an ArrayLiteral" << '\n';
+
+    testIdentifier(indexExp->left.get(), "myArray");
+    testInfixExpression(indexExp->index.get(), 1, "+", 1);
 }
 
 void checkParserErrors(parser::Parser *parser) {

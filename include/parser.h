@@ -25,7 +25,7 @@ class Parser {
     Parser(std::unique_ptr<lexer::Lexer> lexer);
     std::unique_ptr<ast::Program> parseProgram();
     std::vector<std::string> *errors();
-    enum class Precedence { LOWEST = 0, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL };
+    enum class Precedence { LOWEST = 0, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL, INDEX};
 
   private:
     std::unique_ptr<lexer::Lexer> lexer_;
@@ -46,6 +46,7 @@ class Parser {
         {token::TokenType::SLASH, Precedence::PRODUCT},
         {token::TokenType::ASTERISK, Precedence::PRODUCT},
         {token::TokenType::LPAREN, Precedence::CALL},
+        {token::TokenType::LBRACKET, Precedence::INDEX},
     };
 
     void nextToken();
@@ -55,6 +56,7 @@ class Parser {
     std::unique_ptr<ast::ExpressionStatement> parseExpressionStatement();
     std::unique_ptr<ast::PrefixExpression> parsePrefixExpression();
     std::unique_ptr<ast::InfixExpression> parseInfixExpression(std::unique_ptr<ast::Expression> left);
+    std::unique_ptr<ast::Expression> parseIndexExpression(std::unique_ptr<ast::Expression> left);
     bool curTokenIs(token::TokenType tokenType);
     bool peekTokenIs(token::TokenType tokenType);
     bool expectPeek(token::TokenType tokenType);

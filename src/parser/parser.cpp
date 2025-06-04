@@ -8,6 +8,7 @@
 #include "ast/FunctionLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
+#include "ast/IndexExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/PrefixExpression.h"
@@ -61,6 +62,8 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerInfix(token::TokenType::LPAREN, [this](std::unique_ptr<ast::Expression> function) {
         return parseCallExpression(std::move(function));
     });
+    registerInfix(token::TokenType::LBRACKET,
+                  [this](std::unique_ptr<ast::Expression> left) { return parseIndexExpression(std::move(left)); });
 }
 
 void Parser::nextToken() {
@@ -155,6 +158,18 @@ std::unique_ptr<ast::InfixExpression> Parser::parseInfixExpression(std::unique_p
     Precedence precedence = curPrecedence();
     nextToken();
     expression->right = parseExpression(precedence);
+    return expression;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseIndexExpression(std::unique_ptr<ast::Expression> left){
+    std::unique_ptr<ast::IndexExpression> expression = std::make_unique<ast::IndexExpression>();
+    expression->token = currentToken_;
+    expression->left = std::move(left);
+    nextToken();
+    expression->index = parseExpression(Precedence::LOWEST);
+    if (!expectPeek(token::TokenType::RBRACKET)){
+        return nullptr;
+    }
     return expression;
 }
 
