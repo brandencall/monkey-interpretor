@@ -8,6 +8,7 @@
 #include "ast/Program.h"
 #include "ast/Statement.h"
 #include "object/Boolean.h"
+#include "object/Builtin.h"
 #include "object/Environment.h"
 #include "object/Error.h"
 #include "object/Function.h"
@@ -35,5 +36,6 @@ template <typename... Args> object::Error *newError(const std::string &format, A
 bool isError(object::Object *object);
 std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps, object::Environment *env);
 object::Object *unwrapReturnValue(object::Object *obj);
+object::Object *lenFunction(const std::vector<object::Object*>& args);
 
 } // namespace evaluator

@@ -257,6 +257,36 @@ TEST(EvaluatorTest, StringConcatenation) {
     EXPECT_EQ(result->value, "Hello World!")
         << "object has wrong value. got=" << result->value << " wanted=Hello World!" << '\n';
 }
+TEST(EvaluatorTest, BuiltinFunctions) {
+    struct BuiltinTest {
+        std::string input;
+        const std::variant<int, std::string> expected;
+    };
+    BuiltinTest tests[5] = {
+        {"len(\"\")", 0},
+        {"len(\"four\")", 4},
+        {"len(\"hello world\")", 11},
+        {"len(1)", "argument to `len` not supported, got INTEGER"},
+        {"len(\"one\", \"two\")", "wrong number of arguments. want=1 but got=2"},
+    };
+    for (BuiltinTest test : tests) {
+        auto evaluated = testEval(test.input);
+        std::visit(
+            [&](const auto &expected) {
+                using T = std::decay_t<decltype(expected)>;
+                if constexpr (std::is_same_v<T, int>) {
+                    testIntegerObject(evaluated, expected);
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    auto *err = dynamic_cast<object::Error *>(evaluated);
+                    EXPECT_NE(err, nullptr) << "object is not an Error. got=" << err << '\n';
+                    EXPECT_EQ(err->message, expected)
+                        << "object has wrong value. got=" << err->message << " wanted=" << expected
+                        << '\n';
+                }
+            },
+            test.expected);
+    }
+}
 
 object::Object *testEval(std::string input) {
     auto lexer = std::make_unique<lexer::Lexer>(input);
@@ -268,7 +298,7 @@ object::Object *testEval(std::string input) {
 
 void testIntegerObject(object::Object *obj, int expected) {
     auto *result = dynamic_cast<object::Integer *>(obj);
-    EXPECT_NE(result, nullptr) << "object is not an Integer. got=" << obj << '\n';
+    ASSERT_NE(result, nullptr) << "object is not an Integer. got=" << obj << '\n';
     EXPECT_EQ(result->value, expected) << "object has wrong value. got=" << std::to_string(result->value)
                                        << " wanted=" << expected << '\n';
 }

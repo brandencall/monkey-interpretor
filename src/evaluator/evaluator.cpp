@@ -13,6 +13,7 @@
 #include "ast/ReturnStatement.h"
 #include "ast/StringLiteral.h"
 #include "object/Boolean.h"
+#include "object/Builtin.h"
 #include "object/Environment.h"
 #include "object/Function.h"
 #include "object/Integer.h"
@@ -34,6 +35,7 @@ namespace evaluator {
 object::Null NULL_OBJECT{};
 object::Boolean TRUE{true};
 object::Boolean FALSE{false};
+std::map<std::string, object::Builtin *> builtins = {{"len", new object::Builtin(lenFunction)}};
 
 object::Object *eval(ast::Node *node, object::Environment *env) {
 
@@ -241,10 +243,14 @@ object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Enviro
 
 object::Object *evalIdentifier(ast::Identifier *ident, object::Environment *env) {
     auto val = env->get(ident->value);
-    if (val == nullptr) {
-        return newError("identifier not found: ", ident->value);
+    if (val != nullptr) {
+        return val;
     }
-    return val;
+    auto builtin = builtins.find(ident->value);
+    if (builtin != builtins.end()) {
+        return builtin->second;
+    }
+    return newError("identifier not found: ", ident->value);
 }
 
 std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps, object::Environment *env) {
@@ -260,13 +266,14 @@ std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps
 }
 
 object::Object *applyFunction(object::Object *func, std::vector<object::Object *> args) {
-    auto funcObj = dynamic_cast<object::Function *>(func);
-    if (funcObj == nullptr) {
-        return newError("not a function: ", func->typeToString());
+    if (auto funcObj = dynamic_cast<object::Function *>(func)){
+        object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args);
+        object::Object *evaluated = eval(funcObj->body.get(), extendedEnv);
+        return unwrapReturnValue(evaluated);
+    } else if (auto builtin = dynamic_cast<object::Builtin *>(func)){
+        return builtin->fn(args);
     }
-    object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args);
-    object::Object *evaluated = eval(funcObj->body.get(), extendedEnv);
-    return unwrapReturnValue(evaluated);
+    return newError("not a function: ", func->typeToString());
 }
 
 object::Environment *extendFunctionEnvironment(object::Function *func, std::vector<object::Object *> args) {
@@ -315,6 +322,18 @@ object::Object *unwrapReturnValue(object::Object *obj) {
         return returnValue->value;
     }
     return obj;
+}
+
+object::Object *lenFunction(const std::vector<object::Object *> &args) { 
+    if (args.size() != 1){
+        return newError("wrong number of arguments. want=1 but got=", args.size());
+    }
+    auto arg = dynamic_cast<object::String*>(args[0]);
+    if (arg == nullptr){
+        return newError("argument to `len` not supported, got ", args[0]->typeToString());
+    }
+    return new object::Integer(arg->value.size());
+
 }
 
 } // namespace evaluator
