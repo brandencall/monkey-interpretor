@@ -5,6 +5,7 @@
 #include "object/Error.h"
 #include "object/Function.h"
 #include "object/Integer.h"
+#include "object/String.h"
 #include "object/object.h"
 #include "parser.h"
 #include <gtest/gtest.h>
@@ -233,6 +234,15 @@ TEST(EvaluatorTest, FunctionApplication) {
         auto evaluated = testEval(test.input);
         testIntegerObject(evaluated, test.expected);
     }
+}
+
+TEST(EvaluatorTest, StringLiteral) {
+    std::string input = "\"Hello World!\"";
+    auto evaluated = testEval(input);
+    auto *result = dynamic_cast<object::String *>(evaluated);
+    EXPECT_NE(result, nullptr) << "object is not a String. got=" << evaluated << '\n';
+    EXPECT_EQ(result->value, "Hello World!")
+        << "object has wrong value. got=" << result->value << " wanted=Hello World!" << '\n';
 }
 
 object::Object *testEval(std::string input) {

@@ -11,15 +11,16 @@
 #include "ast/PrefixExpression.h"
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
+#include "ast/StringLiteral.h"
 #include "object/Boolean.h"
 #include "object/Environment.h"
 #include "object/Function.h"
 #include "object/Integer.h"
 #include "object/Null.h"
 #include "object/ReturnValue.h"
+#include "object/String.h"
 #include "object/object.h"
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -99,7 +100,10 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
             return evaluatedArgs[0];
         }
         return applyFunction(func, evaluatedArgs);
-    }
+    }else if (auto stringLit = dynamic_cast<ast::StringLiteral *>(node)) {
+        object::String *stringObj = new object::String(stringLit->valueString);
+        return stringObj;
+    } 
 
     return nullptr;
 }
