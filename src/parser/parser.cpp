@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "ast/ArrayLiteral.h"
 #include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
 #include "ast/CallExpression.h"
@@ -16,13 +17,9 @@
 #include "ast/StringLiteral.h"
 #include "lexer.h"
 #include "token.h"
-#include <algorithm>
-#include <cstddef>
 #include <exception>
 #include <functional>
-#include <iostream>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -44,6 +41,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::IF, [this]() { return parseIfExpression(); });
     registerPrefix(token::TokenType::FUNCTION, [this]() { return parseFunctionLiteral(); });
     registerPrefix(token::TokenType::STRING, [this]() { return parseStringLiteral(); });
+    registerPrefix(token::TokenType::LBRACKET, [this]() { return parseArrayLiteral(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -110,7 +108,7 @@ std::unique_ptr<ast::LetStatement> Parser::parseLetStatement() {
     }
     nextToken();
     statement->value = parseExpression(Precedence::LOWEST);
-    if (peekTokenIs(token::TokenType::SEMICOLON)){
+    if (peekTokenIs(token::TokenType::SEMICOLON)) {
         nextToken();
     }
     return statement;
@@ -121,7 +119,7 @@ std::unique_ptr<ast::ReturnStatement> Parser::parseReturnStatement() {
     statement->token = currentToken_;
     nextToken();
     statement->returnValue = parseExpression(Precedence::LOWEST);
-    if (peekTokenIs(token::TokenType::SEMICOLON)){
+    if (peekTokenIs(token::TokenType::SEMICOLON)) {
         nextToken();
     }
     return statement;
@@ -348,30 +346,30 @@ std::unique_ptr<ast::Expression> Parser::parseCallExpression(std::unique_ptr<ast
     std::unique_ptr<ast::CallExpression> expression = std::make_unique<ast::CallExpression>();
     expression->token = currentToken_;
     expression->function = std::move(function);
-    expression->arguments = parseCallArguments();
+    expression->arguments = parseExpressionList(token::TokenType::RPAREN);
     return expression;
 }
 
-std::vector<std::unique_ptr<ast::Expression>> Parser::parseCallArguments() {
-    std::vector<std::unique_ptr<ast::Expression>> args;
-    if (peekTokenIs(token::TokenType::RPAREN)) {
+std::vector<std::unique_ptr<ast::Expression>> Parser::parseExpressionList(token::TokenType end) {
+    std::vector<std::unique_ptr<ast::Expression>> list;
+    if (peekTokenIs(end)) {
         nextToken();
-        return args;
+        return list;
     }
     nextToken();
     std::unique_ptr<ast::Expression> exp = parseExpression(Precedence::LOWEST);
-    args.push_back(std::move(exp));
+    list.push_back(std::move(exp));
+
     while (peekTokenIs(token::TokenType::COMMA)) {
         nextToken();
         nextToken();
         std::unique_ptr<ast::Expression> exp = parseExpression(Precedence::LOWEST);
-        args.push_back(std::move(exp));
+        list.push_back(std::move(exp));
     }
-    if (!expectPeek(token::TokenType::RPAREN)){
-        // cant return null or nullptr; going to throw an exception;
-        throw std::runtime_error("parseCallArguments didn't have a RPAREN in the correct spot");
+    if (!expectPeek(end)) {
+        throw std::runtime_error("parseExpression list didn't have correct closing token in the correct spot");
     }
-    return args;
+    return list;
 }
 
 std::unique_ptr<ast::Expression> Parser::parseStringLiteral() {
@@ -379,6 +377,13 @@ std::unique_ptr<ast::Expression> Parser::parseStringLiteral() {
     literal->token = currentToken_;
     literal->value = currentToken_.literal;
     literal->valueString = currentToken_.literal;
+    return literal;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseArrayLiteral() {
+    std::unique_ptr<ast::ArrayLiteral> literal = std::make_unique<ast::ArrayLiteral>();
+    literal->token = currentToken_;
+    literal->elements = parseExpressionList(token::TokenType::RBRACKET);
     return literal;
 }
 } // namespace parser

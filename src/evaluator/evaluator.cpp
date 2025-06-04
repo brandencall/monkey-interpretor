@@ -21,9 +21,7 @@
 #include "object/ReturnValue.h"
 #include "object/String.h"
 #include "object/object.h"
-#include <algorithm>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>

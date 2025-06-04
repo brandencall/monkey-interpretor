@@ -1,3 +1,4 @@
+#include "ast/ArrayLiteral.h"
 #include "ast/Boolean.h"
 #include "ast/CallExpression.h"
 #include "ast/Expression.h"
@@ -604,6 +605,26 @@ TEST(ParserTest, StringLiteralExpression) {
 
     EXPECT_EQ(stringLit->valueString, "hello world")
         << "literal.value is not of " << "hello world" << " got=" << stringLit->valueString << '\n';
+}
+
+TEST(ParserTest, ParsingArrayLiterals) {
+    std::string input = "[1, 2 * 2, 3 + 3]";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *arrayLit = dynamic_cast<ast::ArrayLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(arrayLit, nullptr) << "the statement[0] is not an ArrayLiteral" << '\n';
+
+    EXPECT_EQ(arrayLit->elements.size(), 3) << "arrayLit size is not 3. got=" << arrayLit->elements.size() << '\n';
+    testIntegerLiteral(arrayLit->elements[0].get(), 1);
+    testInfixExpression(arrayLit->elements[1].get(), 2 , "*", 2);
+    testInfixExpression(arrayLit->elements[2].get(), 3 , "+", 3);
 }
 
 void checkParserErrors(parser::Parser *parser) {
