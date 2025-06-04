@@ -1,4 +1,5 @@
 #include "evaluator/evaluator.h"
+#include "ast/ArrayLiteral.h"
 #include "ast/BlockStatement.h"
 #include "ast/Boolean.h"
 #include "ast/CallExpression.h"
@@ -12,6 +13,7 @@
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/StringLiteral.h"
+#include "object/Array.h"
 #include "object/Boolean.h"
 #include "object/Builtin.h"
 #include "object/Environment.h"
@@ -105,8 +107,20 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
     } else if (auto stringLit = dynamic_cast<ast::StringLiteral *>(node)) {
         object::String *stringObj = new object::String(stringLit->valueString);
         return stringObj;
+    } else if (auto arrayLit = dynamic_cast<ast::ArrayLiteral *>(node)) {
+        std::vector<ast::Expression *> elements;
+        elements.reserve(arrayLit->elements.size());
+        for (const auto &elm : arrayLit->elements) {
+            elements.push_back(elm.get());
+        }
+        std::vector<object::Object *> evaluatedElms = evalExpression(elements, env);
+        if (evaluatedElms.size() == 1 && isError(evaluatedElms[0])) {
+            return evaluatedElms[0];
+        }
+        object::Array *array = new object::Array();
+        array->elements = evaluatedElms;
+        return array;
     }
-
     return nullptr;
 }
 

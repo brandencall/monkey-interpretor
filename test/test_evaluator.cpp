@@ -1,5 +1,6 @@
 #include "evaluator/evaluator.h"
 #include "lexer.h"
+#include "object/Array.h"
 #include "object/Boolean.h"
 #include "object/Environment.h"
 #include "object/Error.h"
@@ -9,6 +10,7 @@
 #include "object/object.h"
 #include "parser.h"
 #include <gtest/gtest.h>
+#include <iostream>
 #include <optional>
 #include <string>
 
@@ -257,6 +259,7 @@ TEST(EvaluatorTest, StringConcatenation) {
     EXPECT_EQ(result->value, "Hello World!")
         << "object has wrong value. got=" << result->value << " wanted=Hello World!" << '\n';
 }
+
 TEST(EvaluatorTest, BuiltinFunctions) {
     struct BuiltinTest {
         std::string input;
@@ -280,12 +283,22 @@ TEST(EvaluatorTest, BuiltinFunctions) {
                     auto *err = dynamic_cast<object::Error *>(evaluated);
                     EXPECT_NE(err, nullptr) << "object is not an Error. got=" << err << '\n';
                     EXPECT_EQ(err->message, expected)
-                        << "object has wrong value. got=" << err->message << " wanted=" << expected
-                        << '\n';
+                        << "object has wrong value. got=" << err->message << " wanted=" << expected << '\n';
                 }
             },
             test.expected);
     }
+}
+
+TEST(EvaluatorTest, ArrayLiterals) {
+    std::string input = "[1, 2 * 2, 3 + 3]";
+    auto evaluated = testEval(input);
+    auto *result = dynamic_cast<object::Array *>(evaluated);
+    ASSERT_NE(result, nullptr) << "object is not an Array. got=" << evaluated << '\n';
+    EXPECT_EQ(result->elements.size(), 3) << "array was wrong size. got=" << result->elements.size();
+    testIntegerObject(result->elements[0], 1);
+    testIntegerObject(result->elements[1], 4);
+    testIntegerObject(result->elements[2], 6);
 }
 
 object::Object *testEval(std::string input) {

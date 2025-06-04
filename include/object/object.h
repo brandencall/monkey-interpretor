@@ -13,7 +13,8 @@ enum class ObjectType {
     ERROR_OBJ,
     FUNCTION_OBJ,
     STRING_OBJ,
-    BUILTIN_OBJ
+    BUILTIN_OBJ,
+    ARRAY_OBJ,
 };
 using BuiltinFunction = Object* (*)(const std::vector<Object *>& args);
 
