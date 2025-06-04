@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 namespace evaluator {
-
 object::Object *eval(ast::Node *node, object::Environment *env);
 object::Object *evalProgram(ast::Program *program, object::Environment *env);
 object::Object *evalBlockStatement(ast::BlockStatement *block, object::Environment *env);
@@ -26,6 +25,7 @@ object::Object *evalInfixExpression(std::string oper, object::Object *left, obje
 object::Object *evalBangOperatorExpression(object::Object *right);
 object::Object *evalMinusOperatorExpression(object::Object *right);
 object::Object *evalIntegerInfixExpression(std::string oper, object::Object *left, object::Object *right);
+object::Object *evalStringInfixExpression(std::string oper, object::Object *left, object::Object *right);
 object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Environment *env);
 object::Object *evalIdentifier(ast::Identifier *ident, object::Environment *env);
 object::Object *applyFunction(object::Object *func, std::vector<object::Object *> args);

@@ -5,7 +5,7 @@
 namespace object {
 class String : public Object {
   public:
-    ObjectType objectType = ObjectType::INTEGER_OBJ;
+    ObjectType objectType = ObjectType::STRING_OBJ;
     std::string value;
 
     String(std::string value) : value(value) {};

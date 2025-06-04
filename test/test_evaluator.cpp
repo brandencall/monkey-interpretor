@@ -138,7 +138,7 @@ TEST(EvaluatorTest, ErrorHandling) {
         std::string input;
         std::string expectedMessage;
     };
-    ErrTest tests[8] = {
+    ErrTest tests[9] = {
         {
             "5 + true;",
             "type mismatch: INTEGER + BOOLEAN",
@@ -177,6 +177,10 @@ TEST(EvaluatorTest, ErrorHandling) {
         {
             "foobar",
             "identifier not found: foobar",
+        },
+        {
+            "\"Hello\" - \"World\"",
+            "unknown operator: STRING - STRING",
         },
     };
     for (ErrTest test : tests) {
@@ -238,6 +242,15 @@ TEST(EvaluatorTest, FunctionApplication) {
 
 TEST(EvaluatorTest, StringLiteral) {
     std::string input = "\"Hello World!\"";
+    auto evaluated = testEval(input);
+    auto *result = dynamic_cast<object::String *>(evaluated);
+    EXPECT_NE(result, nullptr) << "object is not a String. got=" << evaluated << '\n';
+    EXPECT_EQ(result->value, "Hello World!")
+        << "object has wrong value. got=" << result->value << " wanted=Hello World!" << '\n';
+}
+
+TEST(EvaluatorTest, StringConcatenation) {
+    std::string input = "\"Hello\" + \" \" + \"World!\"";
     auto evaluated = testEval(input);
     auto *result = dynamic_cast<object::String *>(evaluated);
     EXPECT_NE(result, nullptr) << "object is not a String. got=" << evaluated << '\n';

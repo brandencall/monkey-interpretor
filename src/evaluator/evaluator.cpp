@@ -20,7 +20,9 @@
 #include "object/ReturnValue.h"
 #include "object/String.h"
 #include "object/object.h"
+#include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -100,10 +102,10 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
             return evaluatedArgs[0];
         }
         return applyFunction(func, evaluatedArgs);
-    }else if (auto stringLit = dynamic_cast<ast::StringLiteral *>(node)) {
+    } else if (auto stringLit = dynamic_cast<ast::StringLiteral *>(node)) {
         object::String *stringObj = new object::String(stringLit->valueString);
         return stringObj;
-    } 
+    }
 
     return nullptr;
 }
@@ -152,8 +154,11 @@ object::Object *evalPrefixExpression(std::string oper, object::Object *right) {
 }
 
 object::Object *evalInfixExpression(std::string oper, object::Object *left, object::Object *right) {
+
     if (left->type() == object::ObjectType::INTEGER_OBJ && right->type() == object::ObjectType::INTEGER_OBJ) {
         return evalIntegerInfixExpression(oper, left, right);
+    } else if (left->type() == object::ObjectType::STRING_OBJ && right->type() == object::ObjectType::STRING_OBJ) {
+        return evalStringInfixExpression(oper, left, right);
     } else if (oper == "==") {
         return nativeBoolToBooleanObject(left == right);
     } else if (oper == "!=") {
@@ -209,6 +214,17 @@ object::Object *evalIntegerInfixExpression(std::string oper, object::Object *lef
     }
 }
 
+object::Object *evalStringInfixExpression(std::string oper, object::Object *left, object::Object *right) {
+    if (oper != "+") {
+        return newError("unknown operator: ", left->typeToString(), oper, right->typeToString());
+    }
+    auto leftObj = dynamic_cast<object::String *>(left);
+    auto rightObj = dynamic_cast<object::String *>(right);
+    std::string leftVal = leftObj->value;
+    std::string rightVal = rightObj->value;
+    return new object::String(leftVal + rightVal);
+}
+
 object::Object *evalIfExpression(ast::IfExpression *ifExpression, object::Environment *env) {
     object::Object *condition = eval(ifExpression->condition.get(), env);
     if (isError(condition)) {
@@ -247,8 +263,8 @@ object::Object *applyFunction(object::Object *func, std::vector<object::Object *
     auto funcObj = dynamic_cast<object::Function *>(func);
     if (funcObj == nullptr) {
         return newError("not a function: ", func->typeToString());
-    } 
-    object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args); 
+    }
+    object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args);
     object::Object *evaluated = eval(funcObj->body.get(), extendedEnv);
     return unwrapReturnValue(evaluated);
 }
@@ -292,7 +308,7 @@ bool isError(object::Object *object) {
     return false;
 }
 
-object::Object *unwrapReturnValue(object::Object *obj){
+object::Object *unwrapReturnValue(object::Object *obj) {
 
     auto returnValue = dynamic_cast<object::ReturnValue *>(obj);
     if (returnValue != nullptr) {
@@ -300,9 +316,5 @@ object::Object *unwrapReturnValue(object::Object *obj){
     }
     return obj;
 }
-
-
-
-
 
 } // namespace evaluator
