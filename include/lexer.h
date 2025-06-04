@@ -17,6 +17,7 @@ class Lexer {
     char ch_;
 
     void readChar();
+    std::string readString();
     token::Token newToken(token::TokenType tokenType, char character);
     std::string readIdentifier();
     std::string readNumber();

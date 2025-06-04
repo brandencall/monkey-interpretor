@@ -19,6 +19,8 @@ TEST(LexerTest, NextToken) {
     }
     10 == 10;
     10 != 9;
+    "foobar"
+    "foo bar"
     )";
 
     std::vector<std::pair<token::TokenType, std::string>> expected = {
@@ -46,8 +48,8 @@ TEST(LexerTest, NextToken) {
         {token::TokenType::SEMICOLON, ";"},  {token::TokenType::RBRACE, "}"},      {token::TokenType::INT, "10"},
         {token::TokenType::EQ, "=="},        {token::TokenType::INT, "10"},        {token::TokenType::SEMICOLON, ";"},
         {token::TokenType::INT, "10"},       {token::TokenType::NOT_EQ, "!="},     {token::TokenType::INT, "9"},
-        {token::TokenType::SEMICOLON, ";"},  {token::TokenType::END_OF_FILE, ""},
-    };
+        {token::TokenType::SEMICOLON, ";"},  {token::TokenType::STRING, "foobar"}, {token::TokenType::STRING, "foo bar"},
+        {token::TokenType::END_OF_FILE, ""}};
 
     lexer::Lexer lexer(input);
     for (size_t i = 0; i < expected.size(); ++i) {

@@ -36,6 +36,8 @@ enum class TokenType {
     IF,
     ELSE,
     RETURN,
+
+    STRING,
 };
 
 struct Token {

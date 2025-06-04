@@ -85,6 +85,10 @@ token::Token Lexer::nextToken() {
     case '}':
         token = newToken(token::TokenType::RBRACE, ch_);
         break;
+    case '"':
+        token.type = token::TokenType::STRING;
+        token.literal = readString();
+        break;
     case 0:
         token.literal = "";
         token.type = token::TokenType::END_OF_FILE;
@@ -104,6 +108,18 @@ token::Token Lexer::nextToken() {
     }
     readChar();
     return token;
+}
+
+std::string Lexer::readString(){
+    int pos = position_ + 1;
+    while (true){
+        readChar();
+        if (ch_ == '"' || ch_ == 0){
+            break;
+        }
+    }
+    int len = position_ - pos;
+    return input_.substr(pos, len);
 }
 
 token::Token Lexer::newToken(token::TokenType tokenType, char character) {
