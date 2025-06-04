@@ -6,6 +6,7 @@
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
 #include "ast/IfExpression.h"
+#include "ast/IndexExpression.h"
 #include "ast/InfixExpression.h"
 #include "ast/IntegerLiteral.h"
 #include "ast/LetStatement.h"
@@ -24,6 +25,7 @@
 #include "object/String.h"
 #include "object/object.h"
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -35,7 +37,11 @@ namespace evaluator {
 object::Null NULL_OBJECT{};
 object::Boolean TRUE{true};
 object::Boolean FALSE{false};
-std::map<std::string, object::Builtin *> builtins = {{"len", new object::Builtin(lenFunction)}};
+std::map<std::string, object::Builtin *> builtins = {{"len", new object::Builtin(lenFunction)},
+                                                     {"first", new object::Builtin(firstFunction)},
+                                                     {"last", new object::Builtin(lastFunction)},
+                                                     {"rest", new object::Builtin(restFunction)},
+                                                     {"push", new object::Builtin(pushFunction)}};
 
 object::Object *eval(ast::Node *node, object::Environment *env) {
 
@@ -120,6 +126,16 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
         object::Array *array = new object::Array();
         array->elements = evaluatedElms;
         return array;
+    } else if (auto indexExpression = dynamic_cast<ast::IndexExpression *>(node)) {
+        auto left = eval(indexExpression->left.get(), env);
+        if (isError(left)) {
+            return left;
+        }
+        auto index = eval(indexExpression->index.get(), env);
+        if (isError(index)) {
+            return index;
+        }
+        return evalIndexExpression(left, index);
     }
     return nullptr;
 }
@@ -278,11 +294,11 @@ std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps
 }
 
 object::Object *applyFunction(object::Object *func, std::vector<object::Object *> args) {
-    if (auto funcObj = dynamic_cast<object::Function *>(func)){
+    if (auto funcObj = dynamic_cast<object::Function *>(func)) {
         object::Environment *extendedEnv = extendFunctionEnvironment(funcObj, args);
         object::Object *evaluated = eval(funcObj->body.get(), extendedEnv);
         return unwrapReturnValue(evaluated);
-    } else if (auto builtin = dynamic_cast<object::Builtin *>(func)){
+    } else if (auto builtin = dynamic_cast<object::Builtin *>(func)) {
         return builtin->fn(args);
     }
     return newError("not a function: ", func->typeToString());
@@ -336,16 +352,111 @@ object::Object *unwrapReturnValue(object::Object *obj) {
     return obj;
 }
 
-object::Object *lenFunction(const std::vector<object::Object *> &args) { 
-    if (args.size() != 1){
+object::Object *lenFunction(const std::vector<object::Object *> &args) {
+    if (args.size() != 1) {
         return newError("wrong number of arguments. want=1 but got=", args.size());
     }
-    auto arg = dynamic_cast<object::String*>(args[0]);
-    if (arg == nullptr){
-        return newError("argument to `len` not supported, got ", args[0]->typeToString());
+    if (auto arg = dynamic_cast<object::String *>(args[0])) {
+        return new object::Integer(arg->value.size());
+    } else if (auto arg = dynamic_cast<object::Array *>(args[0])) {
+        return new object::Integer(arg->elements.size());
     }
-    return new object::Integer(arg->value.size());
+    return newError("argument to `len` not supported, got ", args[0]->typeToString());
+}
 
+object::Object *firstFunction(const std::vector<object::Object *> &args) {
+    if (args.size() != 1) {
+        return newError("wrong number of arguments. want=1 but got=", args.size());
+    }
+    if (args[0]->type() != object::ObjectType::ARRAY_OBJ) {
+        return newError("argument to `first` must be ARRAY, got ", args[0]->typeToString());
+    }
+    auto arr = dynamic_cast<object::Array *>(args[0]);
+    if (arr->elements.size() > 0) {
+        return arr->elements[0];
+    }
+    return &NULL_OBJECT;
+}
+
+object::Object *lastFunction(const std::vector<object::Object *> &args) {
+    if (args.size() != 1) {
+        return newError("wrong number of arguments. want=1 but got=", args.size());
+    }
+    if (args[0]->type() != object::ObjectType::ARRAY_OBJ) {
+        return newError("argument to `last` must be ARRAY, got ", args[0]->typeToString());
+    }
+    auto arr = dynamic_cast<object::Array *>(args[0]);
+    int length = arr->elements.size();
+    if (length > 0) {
+        return arr->elements[length - 1];
+    }
+    return &NULL_OBJECT;
+}
+
+object::Object *restFunction(const std::vector<object::Object *> &args) {
+    if (args.size() != 1) {
+        return newError("wrong number of arguments. want=1 but got=", args.size());
+    }
+    if (args[0]->type() != object::ObjectType::ARRAY_OBJ) {
+        return newError("argument to `rest` must be ARRAY, got ", args[0]->typeToString());
+    }
+    auto arr = dynamic_cast<object::Array *>(args[0]);
+    int length = arr->elements.size();
+    if (length > 0) {
+
+        std::vector<object::Object *> newElements;
+        newElements.reserve(length - 1);
+        for (int i = 1; i < length; i++) {
+            newElements.push_back(arr->elements[i]);
+        }
+        object::Array *newArray = new object::Array();
+        newArray->elements = newElements;
+        return newArray;
+    }
+    return &NULL_OBJECT;
+}
+
+object::Object *pushFunction(const std::vector<object::Object *> &args) {
+    if (args.size() != 2) {
+        return newError("wrong number of arguments. want=2 but got=", args.size());
+    }
+    if (args[0]->type() != object::ObjectType::ARRAY_OBJ) {
+        return newError("argument to `push` must be ARRAY, got ", args[0]->typeToString());
+    }
+    auto arr = dynamic_cast<object::Array *>(args[0]);
+    int length = arr->elements.size();
+
+    std::vector<object::Object *> newElements;
+    newElements.reserve(length + 1);
+    for (int i = 0; i < length; i++) {
+        newElements.push_back(arr->elements[i]);
+    }
+    newElements.push_back(args[1]);
+    object::Array *newArray = new object::Array();
+    newArray->elements = newElements;
+    return newArray;
+}
+
+object::Object *evalIndexExpression(object::Object *left, object::Object *index) {
+    if (left->type() == object::ObjectType::ARRAY_OBJ && index->type() == object::ObjectType::INTEGER_OBJ) {
+        return evalArrayIndexExpression(left, index);
+    } else {
+        return newError("index operator not supported: ", left->typeToString());
+    }
+}
+
+object::Object *evalArrayIndexExpression(object::Object *array, object::Object *index) {
+
+    auto arrayObject = dynamic_cast<object::Array *>(array);
+    auto intObject = dynamic_cast<object::Integer *>(index);
+    int idx = intObject->value;
+    int max = arrayObject->elements.size() - 1;
+
+    if (idx < 0 || idx > max) {
+        return &NULL_OBJECT;
+    }
+
+    return arrayObject->elements[idx];
 }
 
 } // namespace evaluator

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
 object::Object *testEval(std::string input);
 void testIntegerObject(object::Object *obj, int expected);
@@ -263,14 +264,23 @@ TEST(EvaluatorTest, StringConcatenation) {
 TEST(EvaluatorTest, BuiltinFunctions) {
     struct BuiltinTest {
         std::string input;
-        const std::variant<int, std::string> expected;
+        const std::variant<int, std::string, std::vector<int>> expected;
     };
-    BuiltinTest tests[5] = {
+    BuiltinTest tests[14] = {
         {"len(\"\")", 0},
         {"len(\"four\")", 4},
         {"len(\"hello world\")", 11},
         {"len(1)", "argument to `len` not supported, got INTEGER"},
         {"len(\"one\", \"two\")", "wrong number of arguments. want=1 but got=2"},
+        {"len([1, 2, 3])", 3},
+        {"len([])", 0},
+        {"first([1, 2, 3])", 1},
+        {"first(1)", "argument to `first` must be ARRAY, got INTEGER"},
+        {"last([1, 2, 3])", 3},
+        {"last(1)", "argument to `last` must be ARRAY, got INTEGER"},
+        {"rest([1, 2, 3])", std::vector<int>{2, 3}},
+        {"push([], 1)", std::vector<int>{1}},
+        {"push(1, 1)", "argument to `push` must be ARRAY, got INTEGER"},
     };
     for (BuiltinTest test : tests) {
         auto evaluated = testEval(test.input);
@@ -299,6 +309,63 @@ TEST(EvaluatorTest, ArrayLiterals) {
     testIntegerObject(result->elements[0], 1);
     testIntegerObject(result->elements[1], 4);
     testIntegerObject(result->elements[2], 6);
+}
+
+TEST(EvaluatorTest, ArrayIndexExpressions) {
+    struct ArrayTest {
+        std::string input;
+        std::optional<int> expected;
+    };
+    ArrayTest tests[10] = {
+        {
+            "[1, 2, 3][0]",
+            1,
+        },
+        {
+            "[1, 2, 3][1]",
+            2,
+        },
+        {
+            "[1, 2, 3][2]",
+            3,
+        },
+        {
+            "let i = 0; [1][i];",
+            1,
+        },
+        {
+            "[1, 2, 3][1 + 1];",
+            3,
+        },
+        {
+            "let myArray = [1, 2, 3]; myArray[2];",
+            3,
+        },
+        {
+            "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+            6,
+        },
+        {
+            "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+            2,
+        },
+        {
+            "[1, 2, 3][3]",
+            std::nullopt,
+        },
+        {
+            "[1, 2, 3][-1]",
+            std::nullopt,
+        },
+    };
+    for (ArrayTest test : tests) {
+        auto evaluated = testEval(test.input);
+        if (test.expected.has_value()) {
+            testIntegerObject(evaluated, test.expected.value());
+        } else {
+            testNullObject(evaluated);
+        }
+    }
 }
 
 object::Object *testEval(std::string input) {

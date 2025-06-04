@@ -36,6 +36,12 @@ template <typename... Args> object::Error *newError(const std::string &format, A
 bool isError(object::Object *object);
 std::vector<object::Object *> evalExpression(std::vector<ast::Expression *> exps, object::Environment *env);
 object::Object *unwrapReturnValue(object::Object *obj);
+object::Object *evalIndexExpression(object::Object *left, object::Object *index);
+object::Object *evalArrayIndexExpression(object::Object *array, object::Object *index);
 object::Object *lenFunction(const std::vector<object::Object*>& args);
+object::Object *firstFunction(const std::vector<object::Object*>& args);
+object::Object *lastFunction(const std::vector<object::Object*>& args);
+object::Object *restFunction(const std::vector<object::Object*>& args);
+object::Object *pushFunction(const std::vector<object::Object*>& args);
 
 } // namespace evaluator
