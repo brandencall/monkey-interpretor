@@ -13,11 +13,14 @@
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
+#include "ast/StringLiteral.h"
 #include "lexer.h"
 #include "token.h"
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -40,6 +43,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::LPAREN, [this]() { return parseGroupedExpression(); });
     registerPrefix(token::TokenType::IF, [this]() { return parseIfExpression(); });
     registerPrefix(token::TokenType::FUNCTION, [this]() { return parseFunctionLiteral(); });
+    registerPrefix(token::TokenType::STRING, [this]() { return parseStringLiteral(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -368,5 +372,13 @@ std::vector<std::unique_ptr<ast::Expression>> Parser::parseCallArguments() {
         throw std::runtime_error("parseCallArguments didn't have a RPAREN in the correct spot");
     }
     return args;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseStringLiteral() {
+    std::unique_ptr<ast::StringLiteral> literal = std::make_unique<ast::StringLiteral>();
+    literal->token = currentToken_;
+    literal->value = currentToken_.literal;
+    literal->valueString = currentToken_.literal;
+    return literal;
 }
 } // namespace parser

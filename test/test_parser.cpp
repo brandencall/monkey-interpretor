@@ -12,6 +12,7 @@
 #include "ast/Program.h"
 #include "ast/ReturnStatement.h"
 #include "ast/Statement.h"
+#include "ast/StringLiteral.h"
 #include "lexer.h"
 #include "parser.h"
 #include "token.h"
@@ -585,6 +586,24 @@ TEST(ParserTest, ExpressionParameterParsing) {
                 << ", got=" << callExpression->arguments[i]->toString() << '\n';
         }
     }
+}
+TEST(ParserTest, StringLiteralExpression) {
+    std::string input = "\"hello world\"";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    EXPECT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+    EXPECT_EQ(program->statements.size(), 1)
+        << "program statement size isn't correct: " << program->statements.size() << '\n';
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *stringLit = dynamic_cast<ast::StringLiteral *>(expressionStatement->expression.get());
+    EXPECT_NE(stringLit, nullptr) << "the statement[0] is not an StringLiteral" << '\n';
+
+    EXPECT_EQ(stringLit->valueString, "hello world")
+        << "literal.value is not of " << "hello world" << " got=" << stringLit->valueString << '\n';
 }
 
 void checkParserErrors(parser::Parser *parser) {

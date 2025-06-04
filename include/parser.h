@@ -75,5 +75,6 @@ class Parser {
     std::vector<std::unique_ptr<ast::Identifier>> parseFunctionParameters();
     std::unique_ptr<ast::Expression> parseCallExpression(std::unique_ptr<ast::Expression> function);
     std::vector<std::unique_ptr<ast::Expression>> parseCallArguments();
+    std::unique_ptr<ast::Expression> parseStringLiteral();
 };
 } // namespace parser
