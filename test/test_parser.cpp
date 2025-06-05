@@ -4,6 +4,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
+#include "ast/HashLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
 #include "ast/IndexExpression.h"
@@ -19,8 +20,10 @@
 #include "parser.h"
 #include "token.h"
 #include <cstddef>
+#include <functional>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -652,6 +655,140 @@ TEST(ParserTest, ParsingIndexExpressions) {
 
     testIdentifier(indexExp->left.get(), "myArray");
     testInfixExpression(indexExp->index.get(), 1, "+", 1);
+}
+
+TEST(ParserTest, ParsingHashLiteralsStringKeys) {
+    std::string input = "{\"one\": 1, \"two\": 2, \"three\": 3 }";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *hash = dynamic_cast<ast::HashLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(hash, nullptr) << "the statement[0] is not a HashLiteral" << '\n';
+
+    std::map<std::string, int> expected = {
+        {"one", 1},
+        {"two", 2},
+        {"three", 3},
+    };
+    for (const auto &pair : hash->pairs) {
+        auto *literal = dynamic_cast<ast::StringLiteral *>(pair.first.get());
+        ASSERT_NE(literal, nullptr) << "the statement[0] is not an ArrayLiteral" << '\n';
+        int expectedValue = expected[literal->valueString];
+        testIntegerLiteral(pair.second.get(), expectedValue);
+    }
+}
+
+TEST(ParserTest, ParsingEmptyHashLiteral) {
+    std::string input = "{}";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *hash = dynamic_cast<ast::HashLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(hash, nullptr) << "the statement[0] is not a HashLiteral" << '\n';
+    EXPECT_EQ(hash->pairs.size(), 0) << "hash pairs size is wrong. expected 0 but got=" << hash->pairs.size() << '\n';
+}
+
+TEST(ParserTest, ParsingHashLiteralsBooleanKeys) {
+    std::string input = "{true: 1, false: 2}";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *hash = dynamic_cast<ast::HashLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(hash, nullptr) << "the statement[0] is not a HashLiteral" << '\n';
+
+    std::map<std::string, int> expected = {
+        {"true", 1},
+        {"false", 2},
+    };
+    EXPECT_EQ(hash->pairs.size(), expected.size())
+        << "hash pairs size is wrong. expected=" << expected.size() << " but got=" << hash->pairs.size() << '\n';
+    for (const auto &pair : hash->pairs) {
+        auto *boolean = dynamic_cast<ast::Boolean *>(pair.first.get());
+        ASSERT_NE(boolean, nullptr) << "the statement[0] is not a Boolean" << '\n';
+        int expectedValue = expected[boolean->toString()];
+        testIntegerLiteral(pair.second.get(), expectedValue);
+    }
+}
+
+TEST(ParserTest, ParsingHashLiteralsIntegerKeys) {
+    std::string input = "{1: 1, 2: 2, 3: 3}";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *hash = dynamic_cast<ast::HashLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(hash, nullptr) << "the statement[0] is not a HashLiteral" << '\n';
+
+    std::map<std::string, int> expected = {
+        {"1", 1},
+        {"2", 2},
+        {"3", 3},
+    };
+    EXPECT_EQ(hash->pairs.size(), expected.size())
+        << "hash pairs size is wrong. expected=" << expected.size() << " but got=" << hash->pairs.size() << '\n';
+    for (const auto &pair : hash->pairs) {
+        auto *integer = dynamic_cast<ast::IntegerLiteral *>(pair.first.get());
+        ASSERT_NE(integer, nullptr) << "the statement[0] is not an IntegerLiteral" << '\n';
+        int expectedValue = expected[integer->toString()];
+        testIntegerLiteral(pair.second.get(), expectedValue);
+    }
+}
+
+TEST(ParserTest, HashLiteralsWithExpressions) {
+    std::string input = "{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}";
+    auto lexer = std::make_unique<lexer::Lexer>(input);
+    parser::Parser parser = parser::Parser(std::move(lexer));
+    std::unique_ptr<ast::Program> program = parser.parseProgram();
+    checkParserErrors(&parser);
+
+    ASSERT_NE(program, nullptr) << "program is a nullptr :(" << '\n';
+
+    auto *statement = program->statements[0].get();
+    auto *expressionStatement = dynamic_cast<ast::ExpressionStatement *>(statement);
+    auto *hash = dynamic_cast<ast::HashLiteral *>(expressionStatement->expression.get());
+    ASSERT_NE(hash, nullptr) << "the statement[0] is not a HashLiteral" << '\n';
+
+    EXPECT_EQ(hash->pairs.size(), 3) << "hash pairs size is wrong. expected=3 but got=" << hash->pairs.size() << '\n';
+
+    using infixParseFn = std::function<void(ast::Expression *)>;
+    std::map<std::string, infixParseFn> expected = {
+        {"one", [this](ast::Expression *exp) { testInfixExpression(exp, 0, "+", 1); }},
+        {"two", [this](ast::Expression *exp) { testInfixExpression(exp, 10, "-", 8); }},
+        {"three", [this](ast::Expression *exp) { testInfixExpression(exp, 15, "/", 5); }},
+    };
+    for (const auto &pair : hash->pairs) {
+        auto *literal = dynamic_cast<ast::StringLiteral *>(pair.first.get());
+        ASSERT_NE(literal, nullptr) << "the statement[0] is not a StringLiteral" << '\n';
+        
+        auto it = expected.find(pair.first->toString());
+        EXPECT_NE(it, expected.end());
+
+        infixParseFn testFunc = it->second;
+        testFunc(pair.second.get());
+    }
 }
 
 void checkParserErrors(parser::Parser *parser) {

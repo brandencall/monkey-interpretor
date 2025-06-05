@@ -1,19 +1,21 @@
 #pragma once
 #include "object/object.h"
+#include <map>
 #include <string>
 
 namespace object {
-class Boolean : public Object {
+struct HashPair {
+    Object* key;
+    Object* value;
+};
+class Hash : public Object {
   public:
-    ObjectType objectType = ObjectType::BOOLEAN_OBJ;
-    bool value;
+    ObjectType objectType = ObjectType::HASH_OBJ;
+    std::map<HashKey, HashPair> pairs;
 
-    Boolean(bool value) : value(value) {};
     ObjectType type() const override;
     std::string inspect() const override;
     std::string typeToString() const override;
-    HashKey hashKey();
-    bool hashable() const override;
 };
 
 } // namespace object

@@ -41,6 +41,8 @@ enum class TokenType {
 
     LBRACKET,
     RBRACKET,
+
+    COLON,
 };
 
 struct Token {

@@ -95,6 +95,9 @@ token::Token Lexer::nextToken() {
         token.type = token::TokenType::STRING;
         token.literal = readString();
         break;
+    case ':':
+        token = newToken(token::TokenType::COLON, ch_);
+        break;
     case 0:
         token.literal = "";
         token.type = token::TokenType::END_OF_FILE;
@@ -116,11 +119,11 @@ token::Token Lexer::nextToken() {
     return token;
 }
 
-std::string Lexer::readString(){
+std::string Lexer::readString() {
     int pos = position_ + 1;
-    while (true){
+    while (true) {
         readChar();
-        if (ch_ == '"' || ch_ == 0){
+        if (ch_ == '"' || ch_ == 0) {
             break;
         }
     }

@@ -15,6 +15,12 @@ enum class ObjectType {
     STRING_OBJ,
     BUILTIN_OBJ,
     ARRAY_OBJ,
+    HASH_OBJ,
+};
+struct HashKey {
+    ObjectType type;
+    int value;
+    Object* object;
 };
 using BuiltinFunction = Object* (*)(const std::vector<Object *>& args);
 
@@ -25,6 +31,7 @@ class Object {
     virtual ObjectType type() const = 0;
     virtual std::string inspect() const = 0;
     virtual std::string typeToString() const = 0;
+    virtual bool hashable() const = 0;
 };
 
 } // namespace object

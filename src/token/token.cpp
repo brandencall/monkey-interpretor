@@ -71,6 +71,8 @@ std::string tokenTypeToString(TokenType type) {
         return "LBRACKET";
     case TokenType::RBRACKET:
         return "RBRACKET";
+    case TokenType::COLON:
+        return ":";
     default:
         return "UNKNOWN";
     }

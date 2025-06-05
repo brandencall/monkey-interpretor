@@ -6,6 +6,7 @@
 #include "ast/Expression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
+#include "ast/HashLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
 #include "ast/IndexExpression.h"
@@ -43,6 +44,7 @@ Parser::Parser(std::unique_ptr<lexer::Lexer> lexer) : lexer_(std::move(lexer)) {
     registerPrefix(token::TokenType::FUNCTION, [this]() { return parseFunctionLiteral(); });
     registerPrefix(token::TokenType::STRING, [this]() { return parseStringLiteral(); });
     registerPrefix(token::TokenType::LBRACKET, [this]() { return parseArrayLiteral(); });
+    registerPrefix(token::TokenType::LBRACE, [this]() { return parseHashLiteral(); });
     registerInfix(token::TokenType::PLUS,
                   [this](std::unique_ptr<ast::Expression> left) { return parseInfixExpression(std::move(left)); });
     registerInfix(token::TokenType::MINUS,
@@ -161,13 +163,13 @@ std::unique_ptr<ast::InfixExpression> Parser::parseInfixExpression(std::unique_p
     return expression;
 }
 
-std::unique_ptr<ast::Expression> Parser::parseIndexExpression(std::unique_ptr<ast::Expression> left){
+std::unique_ptr<ast::Expression> Parser::parseIndexExpression(std::unique_ptr<ast::Expression> left) {
     std::unique_ptr<ast::IndexExpression> expression = std::make_unique<ast::IndexExpression>();
     expression->token = currentToken_;
     expression->left = std::move(left);
     nextToken();
     expression->index = parseExpression(Precedence::LOWEST);
-    if (!expectPeek(token::TokenType::RBRACKET)){
+    if (!expectPeek(token::TokenType::RBRACKET)) {
         return nullptr;
     }
     return expression;
@@ -400,5 +402,29 @@ std::unique_ptr<ast::Expression> Parser::parseArrayLiteral() {
     literal->token = currentToken_;
     literal->elements = parseExpressionList(token::TokenType::RBRACKET);
     return literal;
+}
+
+std::unique_ptr<ast::Expression> Parser::parseHashLiteral() {
+    std::unique_ptr<ast::HashLiteral> hash = std::make_unique<ast::HashLiteral>();
+    hash->token = currentToken_;
+    while (!peekTokenIs(token::TokenType::RBRACE)) {
+        nextToken();
+        std::unique_ptr<ast::Expression> key = parseExpression(Precedence::LOWEST);
+
+        if (!expectPeek(token::TokenType::COLON)) {
+            return nullptr;
+        }
+        nextToken();
+        std::unique_ptr<ast::Expression> value = parseExpression(Precedence::LOWEST);
+        hash->pairs[std::move(key)] = std::move(value);
+        if (!peekTokenIs(token::TokenType::RBRACE) && !expectPeek(token::TokenType::COMMA)) {
+            return nullptr;
+        }
+    }
+
+    if (!expectPeek(token::TokenType::RBRACE)) {
+        return nullptr;
+    }
+    return hash;
 }
 } // namespace parser
