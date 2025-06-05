@@ -142,7 +142,7 @@ TEST(EvaluatorTest, ErrorHandling) {
         std::string input;
         std::string expectedMessage;
     };
-    ErrTest tests[9] = {
+    ErrTest tests[10] = {
         {
             "5 + true;",
             "type mismatch: INTEGER + BOOLEAN",
@@ -185,6 +185,10 @@ TEST(EvaluatorTest, ErrorHandling) {
         {
             "\"Hello\" - \"World\"",
             "unknown operator: STRING - STRING",
+        },
+        {
+            "{\"name\": \"Monkey\"}[fn(x) { x }];",
+            "unusable as hash key: FUNCTION",
         },
     };
     for (ErrTest test : tests) {
@@ -382,8 +386,8 @@ TEST(EvaluatorTest, HashLiterals) {
     auto evaluated = testEval(input);
     auto *result = dynamic_cast<object::Hash *>(evaluated);
     ASSERT_NE(result, nullptr) << "object is not a Hash. got=" << evaluated << '\n';
-    object::Boolean* TRUE = new object::Boolean(true);
-    object::Boolean* FALSE = new object::Boolean(false);
+    object::Boolean *TRUE = new object::Boolean(true);
+    object::Boolean *FALSE = new object::Boolean(false);
 
     std::map<object::HashKey, int> expected = {
         {object::String("one").hashKey(), 1},
@@ -395,10 +399,53 @@ TEST(EvaluatorTest, HashLiterals) {
     };
     EXPECT_EQ(result->pairs.size(), expected.size()) << "hash is wrong size" << '\n';
 
-    for (const auto& e : expected){
+    for (const auto &e : expected) {
         auto pair = result->pairs.find(e.first);
         EXPECT_NE(pair, result->pairs.end()) << "no pair for given key" << '\n';
         testIntegerObject(pair->second.value, e.second);
+    }
+}
+
+TEST(EvaluatorTest, HashIndexExpressions) {
+    struct HashTest {
+        std::string input;
+        std::optional<int> expected;
+    };
+    HashTest tests[7] = {{
+                             "{\"foo\" : 5}[\"foo\"]",
+                             5,
+                         },
+                         {
+                             "{\"foo\" : 5}[\"bar\"]",
+                             std::nullopt,
+                         },
+                         {
+                             "let key = \"foo\"; {\"foo\" : 5}[key] ",
+                             5,
+                         },
+                         {
+                             "{}[\" foo \"]",
+                             std::nullopt,
+                         },
+                         {
+                             "{5 : 5}[5]",
+                             5,
+                         },
+                         {
+                             "{true: 5}[true]",
+                             5,
+                         },
+                         {
+                             "{false : 5}[false]",
+                             5,
+                         }};
+    for (HashTest test : tests) {
+        auto evaluated = testEval(test.input);
+        if (test.expected.has_value()) {
+            testIntegerObject(evaluated, test.expected.value());
+        } else {
+            testNullObject(evaluated);
+        }
     }
 }
 

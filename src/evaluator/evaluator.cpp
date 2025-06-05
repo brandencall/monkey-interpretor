@@ -140,7 +140,7 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
         return evalIndexExpression(left, index);
     } else if (auto hash = dynamic_cast<ast::HashLiteral *>(node)) {
         return evalHashLiteral(hash, env);
-    } 
+    }
     return nullptr;
 }
 
@@ -444,6 +444,8 @@ object::Object *pushFunction(const std::vector<object::Object *> &args) {
 object::Object *evalIndexExpression(object::Object *left, object::Object *index) {
     if (left->type() == object::ObjectType::ARRAY_OBJ && index->type() == object::ObjectType::INTEGER_OBJ) {
         return evalArrayIndexExpression(left, index);
+    } else if (left->type() == object::ObjectType::HASH_OBJ) {
+        return evalHashIndexExpression(left, index);
     } else {
         return newError("index operator not supported: ", left->typeToString());
     }
@@ -463,19 +465,19 @@ object::Object *evalArrayIndexExpression(object::Object *array, object::Object *
     return arrayObject->elements[idx];
 }
 
-object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env){
+object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env) {
     std::map<object::HashKey, object::HashPair> resultPair;
-    for (const auto& pair : hash->pairs){
+    for (const auto &pair : hash->pairs) {
         auto key = eval(pair.first.get(), env);
-        if (isError(key)){
+        if (isError(key)) {
             return key;
         }
         auto hashKey = dynamic_cast<object::Hashable *>(key);
-        if (hashKey == nullptr){
+        if (hashKey == nullptr) {
             return newError("unusable as hashkey: ", key->typeToString());
         }
         auto value = eval(pair.second.get(), env);
-        if (isError(value)){
+        if (isError(value)) {
             return value;
         }
         auto hashed = hashKey->hashKey();
@@ -484,6 +486,19 @@ object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env
     object::Hash *result = new object::Hash();
     result->pairs = resultPair;
     return result;
+}
+
+object::Object *evalHashIndexExpression(object::Object *hash, object::Object *index) {
+    auto hashObject = dynamic_cast<object::Hash *>(hash);
+    auto key = dynamic_cast<object::Hashable *>(index);
+    if (key == nullptr) {
+        return newError("unusable as hash key: ", index->typeToString());
+    }
+    auto pair = hashObject->pairs.find(key->hashKey());
+    if (pair == hashObject->pairs.end()){
+        return &NULL_OBJECT;
+    }
+    return pair->second.value;
 }
 
 } // namespace evaluator
