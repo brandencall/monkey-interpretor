@@ -2,6 +2,7 @@
 
 #include "ast/BlockStatement.h"
 #include "ast/Expression.h"
+#include "ast/HashLiteral.h"
 #include "ast/Identifier.h"
 #include "ast/IfExpression.h"
 #include "ast/Node.h"
@@ -43,5 +44,6 @@ object::Object *firstFunction(const std::vector<object::Object*>& args);
 object::Object *lastFunction(const std::vector<object::Object*>& args);
 object::Object *restFunction(const std::vector<object::Object*>& args);
 object::Object *pushFunction(const std::vector<object::Object*>& args);
+object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env);
 
 } // namespace evaluator

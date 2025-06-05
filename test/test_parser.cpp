@@ -22,7 +22,6 @@
 #include <cstddef>
 #include <functional>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <sstream>

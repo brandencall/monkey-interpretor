@@ -5,6 +5,7 @@
 #include "ast/CallExpression.h"
 #include "ast/ExpressionStatement.h"
 #include "ast/FunctionLiteral.h"
+#include "ast/HashLiteral.h"
 #include "ast/IfExpression.h"
 #include "ast/IndexExpression.h"
 #include "ast/InfixExpression.h"
@@ -19,13 +20,14 @@
 #include "object/Builtin.h"
 #include "object/Environment.h"
 #include "object/Function.h"
+#include "object/Hash.h"
+#include "object/Hashable.h"
 #include "object/Integer.h"
 #include "object/Null.h"
 #include "object/ReturnValue.h"
 #include "object/String.h"
 #include "object/object.h"
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -136,7 +138,9 @@ object::Object *eval(ast::Node *node, object::Environment *env) {
             return index;
         }
         return evalIndexExpression(left, index);
-    }
+    } else if (auto hash = dynamic_cast<ast::HashLiteral *>(node)) {
+        return evalHashLiteral(hash, env);
+    } 
     return nullptr;
 }
 
@@ -457,6 +461,29 @@ object::Object *evalArrayIndexExpression(object::Object *array, object::Object *
     }
 
     return arrayObject->elements[idx];
+}
+
+object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env){
+    std::map<object::HashKey, object::HashPair> resultPair;
+    for (const auto& pair : hash->pairs){
+        auto key = eval(pair.first.get(), env);
+        if (isError(key)){
+            return key;
+        }
+        auto hashKey = dynamic_cast<object::Hashable *>(key);
+        if (hashKey == nullptr){
+            return newError("unusable as hashkey: ", key->typeToString());
+        }
+        auto value = eval(pair.second.get(), env);
+        if (isError(value)){
+            return value;
+        }
+        auto hashed = hashKey->hashKey();
+        resultPair[hashed] = object::HashPair{key, value};
+    }
+    object::Hash *result = new object::Hash();
+    result->pairs = resultPair;
+    return result;
 }
 
 } // namespace evaluator

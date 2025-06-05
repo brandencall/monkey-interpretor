@@ -17,21 +17,14 @@ enum class ObjectType {
     ARRAY_OBJ,
     HASH_OBJ,
 };
-struct HashKey {
-    ObjectType type;
-    int value;
-    Object* object;
-};
 using BuiltinFunction = Object* (*)(const std::vector<Object *>& args);
 
 class Object {
   public:
-    // typedef std::string ObjectType;
     virtual ~Object() = default;
     virtual ObjectType type() const = 0;
     virtual std::string inspect() const = 0;
     virtual std::string typeToString() const = 0;
-    virtual bool hashable() const = 0;
 };
 
 } // namespace object

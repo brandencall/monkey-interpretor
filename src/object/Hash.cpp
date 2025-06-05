@@ -9,7 +9,7 @@ std::string Hash::inspect() const {
     std::ostringstream oss;
     oss << "{";
     for (const auto &pair : pairs) {
-        oss << pair.first.object->inspect();
+        oss << pair.second.key->inspect();
         oss << ": ";
         oss << pair.second.value->inspect();
         oss << ", ";

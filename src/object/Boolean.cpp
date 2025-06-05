@@ -16,10 +16,9 @@ ObjectType Boolean::type() const { return objectType; }
 
 std::string Boolean::typeToString() const { return "BOOLEAN"; }
 
-HashKey Boolean::hashKey(){
+HashKey Boolean::hashKey() const{
     HashKey result;
     result.type = type();
-    result.object = this;
     if (value){
         result.value = 1;
     } else {
@@ -27,6 +26,5 @@ HashKey Boolean::hashKey(){
     }
     return result;
 }
-bool Boolean::hashable() const { return true; }
 
 } // namespace object

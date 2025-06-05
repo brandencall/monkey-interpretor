@@ -1,5 +1,6 @@
 #pragma once
 #include "object/object.h"
+#include "object/Hashable.h"
 #include <map>
 #include <string>
 

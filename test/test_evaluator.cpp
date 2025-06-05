@@ -5,6 +5,7 @@
 #include "object/Environment.h"
 #include "object/Error.h"
 #include "object/Function.h"
+#include "object/Hash.h"
 #include "object/Integer.h"
 #include "object/String.h"
 #include "object/object.h"
@@ -365,6 +366,39 @@ TEST(EvaluatorTest, ArrayIndexExpressions) {
         } else {
             testNullObject(evaluated);
         }
+    }
+}
+
+TEST(EvaluatorTest, HashLiterals) {
+    std::string input = R"(let two = "two";
+                        {
+                            "one": 10 - 9,
+                            two: 1 + 1,
+                            "thr" + "ee": 6 / 2,
+                            4: 4,
+                            true: 5,
+                            false: 6
+                        })";
+    auto evaluated = testEval(input);
+    auto *result = dynamic_cast<object::Hash *>(evaluated);
+    ASSERT_NE(result, nullptr) << "object is not a Hash. got=" << evaluated << '\n';
+    object::Boolean* TRUE = new object::Boolean(true);
+    object::Boolean* FALSE = new object::Boolean(false);
+
+    std::map<object::HashKey, int> expected = {
+        {object::String("one").hashKey(), 1},
+        {object::String("two").hashKey(), 2},
+        {object::String("three").hashKey(), 3},
+        {object::Integer(4).hashKey(), 4},
+        {TRUE->hashKey(), 5},
+        {FALSE->hashKey(), 6},
+    };
+    EXPECT_EQ(result->pairs.size(), expected.size()) << "hash is wrong size" << '\n';
+
+    for (const auto& e : expected){
+        auto pair = result->pairs.find(e.first);
+        EXPECT_NE(pair, result->pairs.end()) << "no pair for given key" << '\n';
+        testIntegerObject(pair->second.value, e.second);
     }
 }
 
