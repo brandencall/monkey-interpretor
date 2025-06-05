@@ -28,6 +28,7 @@
 #include "object/String.h"
 #include "object/object.h"
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -43,7 +44,8 @@ std::map<std::string, object::Builtin *> builtins = {{"len", new object::Builtin
                                                      {"first", new object::Builtin(firstFunction)},
                                                      {"last", new object::Builtin(lastFunction)},
                                                      {"rest", new object::Builtin(restFunction)},
-                                                     {"push", new object::Builtin(pushFunction)}};
+                                                     {"push", new object::Builtin(pushFunction)},
+                                                     {"puts", new object::Builtin(putsFunction)}};
 
 object::Object *eval(ast::Node *node, object::Environment *env) {
 
@@ -439,6 +441,13 @@ object::Object *pushFunction(const std::vector<object::Object *> &args) {
     object::Array *newArray = new object::Array();
     newArray->elements = newElements;
     return newArray;
+}
+
+object::Object *putsFunction(const std::vector<object::Object *> &args) {
+    for (const auto& arg : args){
+        std::cout << arg->inspect() << '\n';
+    }
+    return &NULL_OBJECT;
 }
 
 object::Object *evalIndexExpression(object::Object *left, object::Object *index) {

@@ -44,6 +44,7 @@ object::Object *firstFunction(const std::vector<object::Object*>& args);
 object::Object *lastFunction(const std::vector<object::Object*>& args);
 object::Object *restFunction(const std::vector<object::Object*>& args);
 object::Object *pushFunction(const std::vector<object::Object*>& args);
+object::Object *putsFunction(const std::vector<object::Object*>& args);
 object::Object *evalHashLiteral(ast::HashLiteral *hash, object::Environment *env);
 object::Object *evalHashIndexExpression(object::Object *hash, object::Object *index);
 
